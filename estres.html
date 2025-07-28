@@ -1,0 +1,561 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calma tu Estrés: El Juego</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Avoid unnecessary scrollbars */
+        }
+        .stressor {
+            position: absolute;
+            padding: 8px 12px;
+            background-color: #f87171; /* red-400 */
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stressor:hover {
+            background-color: #ef4444; /* red-500 */
+        }
+        .coping-tool {
+            transition: background-color 0.3s ease;
+        }
+        #game-area {
+            position: relative;
+            width: 100%;
+            height: 300px; /* Fixed height for game area */
+            background-color: #f3f4f6; /* gray-100 */
+            border-radius: 8px;
+            overflow: hidden; /* So stressors don't go outside */
+        }
+        .stress-bar-container {
+            background-color: #e5e7eb; /* gray-200 */
+            border-radius: 8px;
+            overflow: hidden;
+            height: 30px;
+        }
+        .stress-bar-fill {
+            background-color: #ef4444; /* red-500 */
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease, background-color 0.5s ease;
+            border-radius: 8px 0 0 8px; /* Round only the growing side */
+        }
+        /* Style for modal messages */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-white p-6 rounded-xl shadow-2xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-4xl font-bold text-sky-600">Calma tu Estrés</h1>
+            <p class="text-sm text-slate-500">Tu ID de Jugador: <span id="user-id-display" class="font-semibold">Cargando...</span></p>
+        </header>
+
+        <div class="mb-4">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-lg font-semibold text-slate-700">Nivel de Estrés</span>
+                <span id="level-display" class="text-lg font-semibold text-sky-600">Nivel: 1</span>
+            </div>
+            <div class="stress-bar-container">
+                <div id="stress-bar-fill" class="stress-bar-fill"></div>
+            </div>
+            <p id="stress-value-display" class="text-sm text-right mt-1 text-slate-500">0%</p>
+        </div>
+
+        <div id="game-area" class="mb-6 border border-slate-300">
+            </div>
+
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-center text-slate-700">Herramientas de Afrontamiento</h2>
+            <div id="coping-tools-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                </div>
+        </div>
+        
+        <div id="message-area" class="text-center mb-4 min-h-[24px] text-sky-700 font-semibold">
+            </div>
+
+        <div class="text-center">
+            <button id="start-button" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-75">
+                Comenzar Nivel 1
+            </button>
+        </div>
+    </div>
+
+    <div id="game-modal" class="modal hidden">
+        <div class="modal-content max-w-sm w-full">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-message" class="mb-6"></p>
+            <button id="modal-button" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration (will be replaced in Canvas environment)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'stress-game-dev';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        setLogLevel('debug'); // 'debug' for development, 'silent' for production
+
+        let userId = null;
+        let isAuthReady = false;
+
+        // DOM Elements
+        const stressBarFill = document.getElementById('stress-bar-fill');
+        const stressValueDisplay = document.getElementById('stress-value-display');
+        const gameArea = document.getElementById('game-area');
+        const copingToolsContainer = document.getElementById('coping-tools-container');
+        const startButton = document.getElementById('start-button');
+        const levelDisplay = document.getElementById('level-display');
+        const messageArea = document.getElementById('message-area');
+        const userIdDisplay = document.getElementById('user-id-display');
+
+        // Modal elements
+        const gameModal = document.getElementById('game-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalButton = document.getElementById('modal-button');
+
+        modalButton.addEventListener('click', () => {
+            gameModal.classList.add('hidden');
+        });
+
+        function showModal(title, message, buttonText = "OK") {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalButton.textContent = buttonText;
+            gameModal.classList.remove('hidden');
+        }
+
+        // Game State
+        let gameState = {
+            currentStress: 0,
+            currentLevel: 1,
+            gameActive: false,
+            stressInterval: null,
+            stressorSpawnInterval: null,
+            levelTimer: null,
+            stressorsOnScreen: [],
+        };
+
+        const levelConfig = [
+            { duration: 30000, stressIncreaseRate: 2, stressorSpawnRate: 3000, maxStressors: 3, stressorValue: 10, copingTools: ["respiracion", "pausa"] }, // Level 1
+            { duration: 45000, stressIncreaseRate: 3, stressorSpawnRate: 2500, maxStressors: 4, stressorValue: 12, copingTools: ["respiracion", "pausa", "musica"] }, // Level 2
+            { duration: 60000, stressIncreaseRate: 4, stressorSpawnRate: 2000, maxStressors: 5, stressorValue: 15, copingTools: ["respiracion", "pausa", "musica", "ejercicio"] }, // Level 3
+            // Add more levels here
+        ];
+
+        const copingToolsData = {
+            "respiracion": { name: "Respiración Profunda", stressReduction: 15, cooldown: 5000, description: "Reduce 15 de estrés. Cooldown: 5s" },
+            "pausa": { name: "Pausa Activa", stressReduction: 10, cooldown: 8000, description: "Reduce 10 de estrés. Cooldown: 8s" },
+            "musica": { name: "Escuchar Música", stressReduction: 20, cooldown: 10000, description: "Reduce 20 de estrés. Cooldown: 10s" },
+            "ejercicio": { name: "Ejercicio Rápido", stressReduction: 25, cooldown: 12000, description: "Reduce 25 de estrés. Cooldown: 12s" },
+        };
+
+        // Authentication and Data Loading
+        onAuthStateChanged(auth, async (user) => {
+            console.log("onAuthStateChanged triggered. User object:", user); 
+            if (user) {
+                userId = user.uid;
+                console.log("User authenticated via onAuthStateChanged. UID:", userId, "IsAnonymous:", user.isAnonymous); 
+                userIdDisplay.textContent = userId;
+                isAuthReady = true; // Set auth ready flag
+                await loadGameProgress(); // Load progress now that user is confirmed
+            } else {
+                userId = null; // Clear userId if no user
+                isAuthReady = false; // Set auth not ready
+                console.log("User not authenticated in onAuthStateChanged (user is null). Attempting anonymous login."); 
+                try {
+                    await signInAnonymously(auth);
+                    console.log("signInAnonymously call successful from onAuthStateChanged's else block. onAuthStateChanged should re-trigger with user."); 
+                } catch (error) {
+                    console.error("Error in anonymous login from onAuthStateChanged's else block:", error); 
+                    userIdDisplay.textContent = "Error de autenticación";
+                    showModal("Error de Autenticación", "No se pudo iniciar sesión anónimamente. Por favor, recarga la página. Detalles: " + error.message);
+                }
+            }
+        });
+        
+        async function initializeAuth() {
+            try {
+                console.log("initializeAuth: Attempting setPersistence.");
+                await setPersistence(auth, browserLocalPersistence); 
+                console.log("initializeAuth: setPersistence successful.");
+
+                // Check for custom token first
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && __initial_auth_token.trim() !== "") {
+                    console.log("initializeAuth: __initial_auth_token found. Attempting signInWithCustomToken...");
+                    await signInWithCustomToken(auth, __initial_auth_token); 
+                    // signInWithCustomToken will trigger onAuthStateChanged, which will then set userId, isAuthReady, and call loadGameProgress.
+                    console.log("initializeAuth: signInWithCustomToken attempt complete. Current user after attempt (may take a moment for onAuthStateChanged to reflect fully):", auth.currentUser);
+                } else {
+                    console.log("initializeAuth: No __initial_auth_token. Current user (from persistence, if any):", auth.currentUser);
+                    // If there's no current user at this point (e.g., first visit, no persistence),
+                    // onAuthStateChanged will see user as null and then attempt signInAnonymously.
+                    // If there IS a current user (from persistence), onAuthStateChanged will fire with that user.
+                    // No explicit signInAnonymously call here; let onAuthStateChanged handle the "no user" state.
+                }
+            } catch (error) {
+                // This catch is primarily for errors from signInWithCustomToken or setPersistence
+                console.error("Error during signInWithCustomToken or setPersistence in initializeAuth:", error);
+                showModal("Error Crítico de Autenticación", "Fallo al procesar la autenticación inicial: " + error.message + ". Se intentará login anónimo a través de onAuthStateChanged.");
+                // onAuthStateChanged will still run. If user is null (due to this error or otherwise), it will attempt anonymous sign-in.
+            }
+        }
+        
+        initializeAuth(); // Call initialization
+
+
+        async function loadGameProgress() {
+            console.log(`loadGameProgress called. Global userId: ${userId}, isAuthReady: ${isAuthReady}`);
+            if (!isAuthReady || !userId) { // Check isAuthReady first, then userId
+                console.warn("loadGameProgress: Aborting because isAuthReady is false or userId is null.");
+                return;
+            }
+            
+            // Double-check auth.currentUser directly, as it's the most reliable source just before a Firestore call.
+            if (!auth.currentUser || auth.currentUser.uid !== userId) {
+                console.error("loadGameProgress: Mismatch or null auth.currentUser before getDoc. Global userId:", userId, "auth.currentUser:", auth.currentUser);
+                showModal("Error de Sincronización de Usuario", "Hubo un problema al verificar tu identidad antes de cargar datos. Por favor, recarga.");
+                return; 
+            }
+
+            const currentUserId = auth.currentUser.uid; // Use the most current UID from auth object
+            console.log(`loadGameProgress: Attempting to load progress for userId: ${currentUserId}, appId: ${appId}`);
+            // FIX: Reverted to private user path, which is the correct path for user-specific data.
+            const docRef = doc(db, `artifacts/${appId}/users/${currentUserId}/stressGameData/progress`);
+            try {
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    gameState.currentLevel = data.currentLevel || 1;
+                    console.log("Progress loaded:", data);
+                } else {
+                    console.log("No saved progress found for user " + currentUserId + ", starting at level 1.");
+                    gameState.currentLevel = 1;
+                    await saveGameProgress(false); // Save initial state if no progress exists
+                }
+            } catch (error) {
+                console.error(`Error loading progress from Firestore for user ${currentUserId}:`, error); 
+                showModal("Error de Carga de Progreso", "No se pudo cargar tu progreso: " + error.message + ". Se iniciará en el nivel 1.");
+                gameState.currentLevel = 1; // Fallback
+            }
+            updateUIBeforeGameStart();
+        }
+
+        async function saveGameProgress(showMessage = true) {
+            console.log(`saveGameProgress called. Global userId: ${userId}, isAuthReady: ${isAuthReady}`);
+            if (!isAuthReady || !userId) {
+                console.warn("saveGameProgress: Aborting because isAuthReady is false or userId is null.");
+                return;
+            }
+
+            if (!auth.currentUser || auth.currentUser.uid !== userId) {
+                console.error("saveGameProgress: Mismatch or null auth.currentUser before setDoc. Global userId:", userId, "auth.currentUser:", auth.currentUser);
+                showModal("Error de Sincronización de Usuario", "No se pudo guardar tu progreso debido a un problema de identidad. Por favor, recarga.");
+                return;
+            }
+            
+            const currentUserId = auth.currentUser.uid;
+            console.log(`saveGameProgress: Attempting to save progress for userId: ${currentUserId}, appId: ${appId}`);
+            // FIX: Reverted to private user path, which is the correct path for user-specific data.
+            const docRef = doc(db, `artifacts/${appId}/users/${currentUserId}/stressGameData/progress`);
+            try {
+                await setDoc(docRef, { 
+                    currentLevel: gameState.currentLevel,
+                    lastPlayed: serverTimestamp() 
+                }, { merge: true });
+                if (showMessage) {
+                    console.log("Progress saved successfully for user " + currentUserId);
+                }
+            } catch (error) {
+                console.error(`Error saving progress to Firestore for user ${currentUserId}:`, error);
+                showModal("Error al Guardar Progreso", "No se pudo guardar tu progreso: " + error.message);
+            }
+        }
+        
+        function updateUIBeforeGameStart() {
+            levelDisplay.textContent = `Nivel: ${gameState.currentLevel}`;
+            startButton.textContent = `Comenzar Nivel ${gameState.currentLevel}`;
+            gameState.currentStress = 0; 
+            updateStressBar(); 
+            setupCopingToolsForLevel(gameState.currentLevel -1);
+        }
+
+        function updateStressBar() {
+            const percentage = Math.max(0, Math.min(100, gameState.currentStress));
+            stressBarFill.style.width = `${percentage}%`;
+            stressValueDisplay.textContent = `${Math.round(percentage)}%`;
+            if (percentage > 70) {
+                stressBarFill.style.backgroundColor = '#dc2626'; // red-600
+            } else if (percentage > 40) {
+                stressBarFill.style.backgroundColor = '#f59e0b'; // amber-500
+            } else {
+                stressBarFill.style.backgroundColor = '#22c55e'; // green-500
+            }
+        }
+
+        function increaseStress(amount) {
+            if (!gameState.gameActive) return;
+            gameState.currentStress += amount;
+            if (gameState.currentStress >= 100) {
+                gameState.currentStress = 100;
+                gameOver("¡Estrés al máximo!");
+            }
+            updateStressBar();
+        }
+
+        function decreaseStress(amount) {
+            if (!gameState.gameActive) return;
+            gameState.currentStress -= amount;
+            if (gameState.currentStress < 0) {
+                gameState.currentStress = 0;
+            }
+            updateStressBar();
+        }
+
+        function spawnStressor() {
+            if (!gameState.gameActive || !levelConfig[gameState.currentLevel - 1] || gameState.stressorsOnScreen.length >= levelConfig[gameState.currentLevel - 1].maxStressors) return;
+
+            const stressor = document.createElement('div');
+            stressor.classList.add('stressor');
+            stressor.textContent = "Tarea Urgente!"; 
+            
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            const stressorWidth = 80; 
+            const stressorHeight = 30;
+
+            stressor.style.left = `${Math.random() * (gameAreaRect.width - stressorWidth)}px`;
+            stressor.style.top = `${Math.random() * (gameAreaRect.height - stressorHeight)}px`;
+            
+            stressor.addEventListener('click', () => {
+                if (!gameState.gameActive) return;
+                decreaseStress(levelConfig[gameState.currentLevel - 1].stressorValue / 2); 
+                stressor.remove();
+                gameState.stressorsOnScreen = gameState.stressorsOnScreen.filter(s => s !== stressor);
+                messageArea.textContent = "¡Factor estresante resuelto!";
+                setTimeout(() => messageArea.textContent = "", 1500);
+            });
+
+            gameArea.appendChild(stressor);
+            gameState.stressorsOnScreen.push(stressor);
+
+            setTimeout(() => {
+                if (gameState.gameActive && gameState.stressorsOnScreen.includes(stressor)) {
+                    increaseStress(levelConfig[gameState.currentLevel - 1].stressorValue);
+                    stressor.remove(); 
+                    gameState.stressorsOnScreen = gameState.stressorsOnScreen.filter(s => s !== stressor);
+                    messageArea.textContent = "Un factor estresante no se resolvió a tiempo.";
+                     setTimeout(() => messageArea.textContent = "", 2000);
+                }
+            }, 5000 + Math.random() * 2000); 
+        }
+
+        function setupCopingToolsForLevel(levelIndex) {
+            copingToolsContainer.innerHTML = ''; 
+            const currentLevelConfig = levelConfig[levelIndex];
+            if (!currentLevelConfig || !currentLevelConfig.copingTools) {
+                console.error("Invalid level configuration for tools:", levelIndex, currentLevelConfig);
+                // Clear tools if config is bad or level doesn't exist
+                if(levelIndex >= levelConfig.length) {
+                     messageArea.textContent = "¡Has completado todos los niveles!";
+                }
+                return;
+            }
+
+            currentLevelConfig.copingTools.forEach(toolKey => {
+                const tool = copingToolsData[toolKey];
+                if (!tool) {
+                    console.warn(`Tool ${toolKey} not found.`);
+                    return;
+                }
+                const button = document.createElement('button');
+                button.classList.add('coping-tool', 'bg-emerald-500', 'hover:bg-emerald-600', 'text-white', 'font-semibold', 'py-2', 'px-4', 'rounded-lg', 'w-full', 'disabled:opacity-50', 'disabled:cursor-not-allowed');
+                button.textContent = tool.name;
+                button.title = tool.description;
+                button.dataset.toolKey = toolKey;
+
+                button.addEventListener('click', () => {
+                    if (!gameState.gameActive || button.disabled) return;
+                    
+                    decreaseStress(tool.stressReduction);
+                    messageArea.textContent = `Usaste: ${tool.name}. ¡Estrés reducido!`;
+                    setTimeout(() => messageArea.textContent = "", 2000);
+
+                    button.disabled = true;
+                    setTimeout(() => {
+                        if (gameState.gameActive) button.disabled = false; 
+                    }, tool.cooldown);
+                });
+                copingToolsContainer.appendChild(button);
+            });
+        }
+
+
+        function startGame() {
+            if (!isAuthReady || !auth.currentUser) { 
+                showModal("Espera", "Aún estamos configurando tu sesión o no se pudo autenticar. Intenta en unos segundos o recarga la página.");
+                console.warn("startGame aborted: Auth not ready or no current user.", "isAuthReady:", isAuthReady, "auth.currentUser:", auth.currentUser);
+                return;
+            }
+            if (gameState.currentLevel -1 >= levelConfig.length) { // Check if currentLevel is beyond defined levels
+                 showModal("¡Felicidades!", "¡Has completado todos los niveles disponibles! Pronto añadiremos más.", "Reiniciar Juego");
+                 modalButton.onclick = () => { 
+                    gameState.currentLevel = 1;
+                    saveGameProgress();
+                    updateUIBeforeGameStart();
+                    gameModal.classList.add('hidden');
+                 };
+                return;
+            }
+
+            gameState.gameActive = true;
+            gameState.currentStress = 0; 
+            gameState.stressorsOnScreen.forEach(s => s.remove());
+            gameState.stressorsOnScreen = [];
+            
+            updateStressBar();
+            messageArea.textContent = `Nivel ${gameState.currentLevel} iniciado. ¡Buena suerte!`;
+            startButton.textContent = `Nivel ${gameState.currentLevel} en Curso...`;
+            startButton.disabled = true;
+
+            const currentLvlCfg = levelConfig[gameState.currentLevel - 1];
+             if (!currentLvlCfg) {
+                console.error("Configuración de nivel no encontrada para el nivel:", gameState.currentLevel);
+                gameOver("Error de configuración del nivel.");
+                return;
+            }
+            setupCopingToolsForLevel(gameState.currentLevel - 1); 
+            document.querySelectorAll('.coping-tool').forEach(btn => btn.disabled = false);
+
+
+            gameState.stressInterval = setInterval(() => {
+                if (gameState.gameActive) {
+                    increaseStress(currentLvlCfg.stressIncreaseRate);
+                }
+            }, 1000);
+
+            gameState.stressorSpawnInterval = setInterval(() => {
+                if (gameState.gameActive) {
+                    spawnStressor();
+                }
+            }, currentLvlCfg.stressorSpawnRate);
+
+            gameState.levelTimer = setTimeout(() => {
+                if (gameState.gameActive) { 
+                    levelComplete();
+                }
+            }, currentLvlCfg.duration);
+        }
+
+        function stopGameMechanics() {
+            clearInterval(gameState.stressInterval);
+            clearInterval(gameState.stressorSpawnInterval);
+            clearTimeout(gameState.levelTimer);
+            gameState.stressInterval = null;
+            gameState.stressorSpawnInterval = null;
+            gameState.levelTimer = null;
+            gameState.stressorsOnScreen.forEach(s => s.remove());
+            gameState.stressorsOnScreen = [];
+            document.querySelectorAll('.coping-tool').forEach(btn => btn.disabled = true);
+        }
+
+        function gameOver(reason) {
+            if (!gameState.gameActive) return; 
+            gameState.gameActive = false;
+            stopGameMechanics();
+            showModal("¡Juego Terminado!", `${reason} Has perdido el nivel ${gameState.currentLevel}. ¡Inténtalo de nuevo!`, "Reintentar Nivel");
+            modalButton.onclick = () => { 
+                updateUIBeforeGameStart(); 
+                startButton.disabled = false;
+                startButton.textContent = `Reintentar Nivel ${gameState.currentLevel}`;
+                gameModal.classList.add('hidden');
+            };
+        }
+
+        function levelComplete() {
+            if (!gameState.gameActive) return; 
+            gameState.gameActive = false;
+            stopGameMechanics();
+            
+            const oldLevel = gameState.currentLevel; 
+            gameState.currentLevel++; 
+            saveGameProgress(); 
+
+            let message = `¡Felicidades! Has superado el Nivel ${oldLevel}.`;
+            let buttonText = `Comenzar Nivel ${gameState.currentLevel}`;
+
+
+            if (gameState.currentLevel -1 >= levelConfig.length) { // Check if the *new* currentLevel is beyond defined levels
+                message = `¡Increíble! ¡Has completado todos los niveles (Nivel ${oldLevel} superado)!`;
+                buttonText = "Volver al Inicio";
+                 showModal("¡Victoria Total!", message, buttonText);
+                 modalButton.onclick = () => {
+                    gameState.currentLevel = 1; 
+                    saveGameProgress(); 
+                    updateUIBeforeGameStart();
+                    startButton.disabled = false; 
+                    gameModal.classList.add('hidden');
+                 };
+            } else {
+                 showModal("¡Nivel Superado!", message, buttonText);
+                 modalButton.onclick = () => { 
+                    updateUIBeforeGameStart(); 
+                    startButton.disabled = false; 
+                    gameModal.classList.add('hidden');
+                 };
+            }
+        }
+        
+        startButton.addEventListener('click', () => {
+            if (!gameState.gameActive) {
+                if (!gameModal.classList.contains('hidden')) {
+                    gameModal.classList.add('hidden');
+                }
+                startGame();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            // Placeholder for potential responsive adjustments to game elements if needed
+        });
+
+    </script>
+</body>
+</html>
+
