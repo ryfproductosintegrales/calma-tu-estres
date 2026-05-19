@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -647,6 +647,16 @@
           Tu ID de Jugador:
           <span id="user-id-display" class="font-semibold">Cargando...</span>
         </p>
+        <div class="flex justify-center gap-6 mt-2">
+          <div class="text-sm text-slate-600">
+            Puntaje Total:
+            <span id="total-score-display" class="font-semibold">0</span>
+          </div>
+          <div class="text-sm text-slate-600">
+            Puntaje Nivel:
+            <span id="level-score-display" class="font-semibold">0</span>
+          </div>
+        </div>
       </header>
 
       <div class="mb-4">
@@ -713,12 +723,20 @@
       <div class="modal-content max-w-sm w-full">
         <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
         <p id="modal-message" class="mb-6"></p>
-        <button
-          id="modal-button"
-          class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg"
-        >
-          OK
-        </button>
+        <div class="flex justify-center gap-4">
+          <button
+            id="modal-button"
+            class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg"
+          >
+            OK
+          </button>
+          <button
+            id="modal-button-secondary"
+            class="bg-gray-300 hover:bg-gray-400 text-slate-700 font-bold py-2 px-4 rounded-lg hidden"
+          >
+            Opcional
+          </button>
+        </div>
       </div>
     </div>
 
@@ -853,6 +871,8 @@
         stressorSpawnInterval: null,
         levelTimer: null,
         stressorsOnScreen: [],
+        totalScore: 0,
+        lastLevelScore: 0,
       };
 
       // Configuración de Niveles (se mantiene igual)
@@ -945,6 +965,36 @@
         window.scrollTo(0, 0); // Asegura que la pantalla se vea desde arriba
       }
 
+      // Helpers para puntajes y modal secundario
+      const totalScoreDisplay = document.getElementById("total-score-display");
+      const levelScoreDisplay = document.getElementById("level-score-display");
+      const modalButtonSecondary = document.getElementById(
+        "modal-button-secondary",
+      );
+
+      function updateScoreDisplays() {
+        if (totalScoreDisplay)
+          totalScoreDisplay.textContent = `${gameState.totalScore}`;
+        if (levelScoreDisplay)
+          levelScoreDisplay.textContent = `${gameState.lastLevelScore}`;
+      }
+
+      function showSecondaryModalButton(text, callback) {
+        if (!modalButtonSecondary) return;
+        modalButtonSecondary.textContent = text;
+        modalButtonSecondary.classList.remove("hidden");
+        modalButtonSecondary.onclick = () => {
+          callback();
+          modalButtonSecondary.classList.add("hidden");
+        };
+      }
+
+      function hideSecondaryModalButton() {
+        if (!modalButtonSecondary) return;
+        modalButtonSecondary.classList.add("hidden");
+        modalButtonSecondary.onclick = null;
+      }
+
       // Event Listeners para la navegación entre pantallas
       startIntroButton.addEventListener("click", () => {
         showScreen("stress-info-screen");
@@ -997,14 +1047,51 @@
       // Event listener para el botón de continuar al nivel 4
       continueToLevel4Button.addEventListener("click", () => {
         checkQuestionnaireCompletion();
-        if (!continueToLevel4Button.disabled) {
-          // Todas las preguntas están respondidas, ir al juego
+        if (continueToLevel4Button.disabled) return;
+
+        // Obtener valor de la pregunta 6
+        const q6Input = document.querySelector('[data-question="6"]');
+        let q6 = null;
+        if (q6Input) q6 = parseInt(q6Input.value, 10);
+        if (Number.isNaN(q6)) q6 = null;
+
+        // Lógica de puntaje del cuestionario
+        let questionnaireScore = 10; // puntaje base
+        if (q6 !== null) {
+          if (q6 < 5) {
+            questionnaireScore += 10; // suma 10 puntos
+          } else if (q6 > 5) {
+            questionnaireScore = 5; // reduce a 5
+          }
+        }
+
+        // Determinar si las respuestas son altamente estresantes (umbral en q6)
+        const highStress = q6 !== null && q6 >= 8;
+
+        // Mensaje y recomendaciones automáticas
+        let rec = "";
+        if (highStress) {
+          rec =
+            "RECOMENDACIÓN IMPORTANTE: Tus respuestas indican un nivel de estrés alto. Busca apoyo profesional si los síntomas persisten, considera técnicas de respiración profunda ahora y contacta a alguien de confianza.\n";
+        }
+
+        const msg = `${rec}Puntaje del cuestionario: ${questionnaireScore}.\n(Nota: base 10; q6<5 suma +10; q6>5 reduce a 5).`;
+
+        // Mostrar la información del cuestionario automáticamente
+        showModal("Resultados del Cuestionario", msg, "Continuar al Nivel 4");
+        hideSecondaryModalButton();
+
+        modalButton.onclick = () => {
+          // Añadir el puntaje del cuestionario al puntaje total del juego
+          gameState.totalScore += questionnaireScore;
+          updateScoreDisplays();
+
+          // Ir al contenedor principal del juego
           showScreen("main-game-container");
-          // gameState.currentLevel ya está en 4 (se incrementó en levelComplete)
           updateUIBeforeGameStart();
           startButton.disabled = false;
-          // El jugador puede hacer clic en "Comenzar Nivel 4"
-        }
+          gameModal.classList.add("hidden");
+        };
       });
 
       // --- Lógica de Autenticación y Carga de Datos (la mayoría se mantiene igual) ---
@@ -1268,6 +1355,7 @@
         gameState.currentStress = 0;
         updateStressBar();
         setupCopingToolsForLevel(gameState.currentLevel - 1);
+        updateScoreDisplays();
       }
 
       function updateStressBar() {
@@ -1515,11 +1603,16 @@
         if (!gameState.gameActive) return;
         gameState.gameActive = false;
         stopGameMechanics();
+        // Aplicar penalización al puntaje total: reducir al 20%
+        gameState.totalScore = Math.round(gameState.totalScore * 0.2);
+        updateScoreDisplays();
+
         showModal(
           "¡Juego Terminado!",
-          `${reason} Has perdido el nivel ${gameState.currentLevel}. ¡Inténtalo de nuevo!`,
+          `${reason} Has perdido el nivel ${gameState.currentLevel}. Tu puntaje total se redujo al 20%: ${gameState.totalScore}. ¡Inténtalo de nuevo!`,
           "Reintentar Nivel",
         );
+        hideSecondaryModalButton();
         modalButton.onclick = () => {
           updateUIBeforeGameStart();
           startButton.disabled = false;
@@ -1532,8 +1625,17 @@
         if (!gameState.gameActive) return;
         gameState.gameActive = false;
         stopGameMechanics();
-
         const oldLevel = gameState.currentLevel;
+
+        // Calcular puntaje del nivel en base al estrés final (más bajo = mejor puntuación)
+        const levelScore = Math.max(
+          0,
+          Math.round(100 - gameState.currentStress),
+        );
+        gameState.lastLevelScore = levelScore;
+        gameState.totalScore += levelScore;
+        updateScoreDisplays();
+
         gameState.currentLevel++;
 
         // Si acaba de completar el nivel 3, mostrar el cuestionario antes del nivel 4
@@ -1548,16 +1650,34 @@
           continueToLevel4Button.disabled = true;
           // Mostrar la pantalla del cuestionario
           showScreen("stress-questionnaire-screen");
+          // Mostrar felicitación amplia antes del cuestionario
+          showModal(
+            "¡Nivel Superado!",
+            `¡Felicidades! Has superado el Nivel ${oldLevel}. Puntaje nivel: ${levelScore}. Puntaje total: ${gameState.totalScore}. Completa el cuestionario para continuar.`,
+            "Continuar",
+          );
+          modalButton.onclick = () => {
+            gameModal.classList.add("hidden");
+          };
           return;
         }
 
-        let message = `¡Felicidades! Has superado el Nivel ${oldLevel}.`;
-        let buttonText = `Comenzar Nivel ${gameState.currentLevel}`;
+        // Mensaje ampliado de felicitación
+        const message = `¡Felicidades! Has superado el Nivel ${oldLevel}.\nPuntaje obtenido en este nivel: ${levelScore}.\nPuntaje total acumulado: ${gameState.totalScore}.\n¡Sigue así, te esperamos en el próximo nivel!`;
 
-        if (gameState.currentLevel - 1 >= levelConfig.length) {
-          message = `¡Increíble! ¡Has completado todos los niveles (Nivel ${oldLevel} superado)!`;
-          buttonText = "Volver al Inicio";
-          showModal("¡Victoria Total!", message, buttonText);
+        hideSecondaryModalButton();
+
+        // Si se superaron los niveles 3 o 4, ofrecer opción especial
+        if (oldLevel === 3 || oldLevel === 4) {
+          showModal("¡Nivel Superado!", message, "Volver al Inicio (Nivel 1)");
+          showSecondaryModalButton("Esperar actualización (Nivel 5)", () => {
+            // Si el usuario elige esperar, dejamos el estado como está y mostramos mensaje
+            messageArea.textContent =
+              "Has elegido esperar la próxima actualización. Gracias por jugar.";
+            startButton.disabled = true;
+            gameModal.classList.add("hidden");
+          });
+
           modalButton.onclick = () => {
             gameState.currentLevel = 1;
             saveGameProgress();
@@ -1567,7 +1687,11 @@
           };
         } else {
           saveGameProgress();
-          showModal("¡Nivel Superado!", message, buttonText);
+          showModal(
+            "¡Nivel Superado!",
+            message,
+            `Comenzar Nivel ${gameState.currentLevel}`,
+          );
           modalButton.onclick = () => {
             updateUIBeforeGameStart();
             startButton.disabled = false;
