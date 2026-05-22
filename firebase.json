@@ -1,0 +1,28 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html" // ¡CAMBIADO A estres.html!
+      }
+    ],
+    "appAssociation": "AUTO",
+    "headers": [
+        {
+            "source": "**",
+            "headers": [
+                {
+                    "key": "Service-Worker-Allowed",
+                    "value": "/"
+                }
+            ]
+        }
+    ]
+  }
+}

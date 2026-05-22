@@ -1,0 +1,1797 @@
+﻿<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="google-site-verification"
+      content="-bJ9Eyj60mC1FezYSaDSHAieO8Z-dJKB7_HXqKYN_wg"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calma tu Estrés: El Juego</title>
+    <!-- Favicon estándar para la mayoría de los navegadores -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <!-- Icono para dispositivos Apple (aparece si el usuario lo añade a su pantalla de inicio) -->
+    <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png" />
+
+    <!-- Icono para Android Chrome (si lo añaden a la pantalla de inicio) -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- Nota: El manifest.webmanifest es más complejo y contiene más información sobre tu PWA -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        /* Se eliminó 'overflow: hidden;' para permitir el desplazamiento vertical en la pantalla de info */
+        background-color: #f0f2f5; /* Un color de fondo suave para todo el cuerpo */
+        color: #333;
+      }
+      .stressor {
+        position: absolute;
+        padding: 8px 12px;
+        background-color: #f87171; /* red-400 */
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .stressor:hover {
+        background-color: #ef4444; /* red-500 */
+      }
+      .coping-tool {
+        transition: background-color 0.3s ease;
+      }
+
+      #game-area {
+        position: relative;
+        width: 100%;
+        height: 300px; /* Altura normal para pantallas grandes */
+        background-color: #f3f4f6; /* gray-100 */
+        border-radius: 8px;
+        overflow: hidden; /* So stressors don't go outside */
+      }
+
+      /* Responsive para móviles */
+      @media (max-width: 640px) {
+        #game-area {
+          height: 200px; /* Área de juego más pequeña en móviles */
+        }
+      }
+
+      .stress-bar-container {
+        background-color: #e5e7eb; /* gray-200 */
+        border-radius: 8px;
+        overflow: hidden;
+        height: 30px;
+      }
+      .stress-bar-fill {
+        background-color: #ef4444; /* red-500 */
+        height: 100%;
+        width: 0%;
+        transition:
+          width 0.5s ease,
+          background-color 0.5s ease;
+        border-radius: 8px 0 0 8px; /* Round only the growing side */
+      }
+      /* Estilos para modales */
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .modal-content {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      /* Estilos para la pantalla de bienvenida (splash) */
+      #splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        transition: opacity 1s ease;
+      }
+      #splash-screen.fade-out {
+        opacity: 0;
+        pointer-events: none; /* Permite clicks a través cuando se desvanece */
+      }
+      #splash-screen img {
+        width: 250px;
+        height: auto;
+        margin-bottom: 20px;
+      }
+
+      /* Estilo para las secciones que deben estar ocultas */
+      .hidden {
+        display: none !important;
+      }
+
+      /* Estilos para la nueva pantalla de información sobre el estrés */
+      #stress-info-screen {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      #stress-info-screen h2 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.25rem; /* text-4xl */
+        font-weight: 700; /* font-bold */
+      }
+
+      #stress-info-screen h3,
+      #stress-info-screen h4 {
+        color: #34495e;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+        margin-top: 30px;
+        font-size: 1.5rem; /* text-2xl */
+        font-weight: 600; /* font-semibold */
+      }
+
+      #stress-info-screen p {
+        margin-bottom: 15px;
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      #stress-info-screen ul {
+        list-style-type: disc;
+        margin-left: 20px;
+        margin-bottom: 15px;
+      }
+
+      #stress-info-screen li {
+        margin-bottom: 8px;
+        font-size: 1rem;
+      }
+
+      #stress-info-screen strong {
+        font-weight: 700; /* font-bold */
+      }
+
+      /* Botón general para las pantallas */
+      .screen-button {
+        background-color: #10b981; /* emerald-500 */
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 1.125rem; /* text-lg */
+        font-weight: 700; /* font-bold */
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        border: none;
+        display: block; /* Para que ocupe todo el ancho disponible */
+        width: fit-content; /* Se ajusta al contenido */
+        margin: 30px auto 0 auto; /* Centrado */
+      }
+
+      .screen-button:hover {
+        background-color: #059669; /* emerald-600 */
+      }
+
+      /* Estilos para la pantalla de cuestionario */
+      #stress-questionnaire-screen {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+      }
+
+      .questionnaire-input {
+        font-family: "Inter", sans-serif;
+      }
+
+      .questionnaire-input:focus {
+        border-color: #0ea5e9 !important;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-50 text-slate-800 flex flex-col items-center justify-center min-h-screen p-4"
+  >
+    <!-- Pantalla de Bienvenida (Splash Screen) -->
+    <div id="splash-screen">
+      <img src="logo.png" alt="Logo de Calma tu Estrés" />
+      <h1 class="text-4xl font-bold text-sky-600">BIENVENIDOS</h1>
+      <button id="start-intro-button" class="screen-button">Comenzar</button>
+    </div>
+
+    <!-- Nueva Pantalla: Entendiendo el Estrés -->
+    <div id="stress-info-screen" class="hidden">
+      <h2>Entendiendo el Estrés y el Camino hacia la Calma</h2>
+      <p>
+        ¡Hola de nuevo! Antes de sumergirnos en la diversión de "Calma tu
+        Estrés", queremos compartir contigo un poco de información clave sobre
+        algo que nos afecta a todos: el estrés. Entenderlo es el primer paso
+        para gestionarlo y encontrar la calma.
+      </p>
+
+      <section>
+        <h3>¿Qué es el Estrés?</h3>
+        <p>
+          El estrés es una respuesta natural de nuestro cuerpo y mente a
+          desafíos o demandas. Es la forma en que nuestro sistema se prepara
+          para afrontar una situación que percibimos como amenazante o exigente.
+          Un poco de estrés puede ser útil para mantenernos alerta y motivados,
+          pero cuando se vuelve excesivo o prolongado, puede tener efectos
+          negativos en nuestra salud.
+        </p>
+      </section>
+
+      <section>
+        <h3>Tipos de Estrés</h3>
+        <p>
+          No todo el estrés es igual. Podemos distinguirlo principalmente en
+          tres tipos:
+        </p>
+        <ul>
+          <li>
+            <strong>Estrés Agudo:</strong> Es el estrés más común. Surge de las
+            demandas y presiones recientes y anticipadas en el futuro cercano.
+            Piensa en el nerviosismo antes de un examen o una presentación. Es
+            intenso pero de corta duración, y una vez que la situación pasa,
+            nuestros sistemas vuelven a la normalidad.
+          </li>
+          <li>
+            <strong>Estrés Crónico:</strong> Este tipo de estrés es prolongado y
+            recurrente. Ocurre cuando nos exponemos constantemente a situaciones
+            estresantes sin un respiro o una solución clara. Problemas
+            financieros persistentes, relaciones conflictivas o un trabajo muy
+            demandante pueden causar estrés crónico. Es particularmente dañino
+            porque mantiene nuestro cuerpo en un estado de "alerta" constante,
+            agotando nuestros recursos.
+          </li>
+          <li>
+            <strong>Eustrés (Estrés Positivo):</strong> ¡Sí, el estrés también
+            puede ser bueno! El eustrés es una forma de estrés que nos motiva y
+            nos ayuda a crecer. Surge de situaciones desafiantes pero
+            emocionantes, como empezar un nuevo proyecto, enamorarse o
+            prepararse para un evento deportivo. Nos energiza, nos enfoca y nos
+            impulsa a dar lo mejor de nosotros.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Causas Comunes del Estrés</h3>
+        <p>
+          Las causas del estrés son muy variadas y pueden ser diferentes para
+          cada persona, pero algunas de las más comunes incluyen:
+        </p>
+        <ul>
+          <li>
+            <strong>Laborales:</strong> Exceso de trabajo, presión por el
+            rendimiento, inseguridad laboral.
+          </li>
+          <li>
+            <strong>Financieras:</strong> Deudas, problemas económicos,
+            incertidumbre.
+          </li>
+          <li>
+            <strong>Personales/Relacionales:</strong> Conflictos familiares,
+            problemas de pareja, soledad.
+          </li>
+          <li>
+            <strong>Salud:</strong> Enfermedades propias o de seres queridos,
+            cambios corporales.
+          </li>
+          <li>
+            <strong>Eventos Vitales:</strong> Mudanzas, bodas, divorcios,
+            fallecimientos.
+          </li>
+          <li>
+            <strong>Ambientales:</strong> Ruido excesivo, tráfico, vivir en
+            zonas peligrosas.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Consecuencias del Estrés Prolongado</h3>
+        <p>
+          Cuando el estrés se vuelve crónico, sus efectos pueden manifestarse en
+          varias áreas:
+        </p>
+        <ul>
+          <li>
+            <strong>Físicas:</strong> Dolores de cabeza, tensión muscular,
+            problemas digestivos, fatiga, debilitamiento del sistema inmune,
+            problemas de sueño.
+          </li>
+          <li>
+            <strong>Emocionales:</strong> Ansiedad, irritabilidad, tristeza,
+            sensación de abrumación, cambios de humor.
+          </li>
+          <li>
+            <strong>Mentales:</strong> Dificultad para concentrarse, problemas
+            de memoria, indecisión.
+          </li>
+          <li>
+            <strong>Conductuales:</strong> Aislamiento social, cambios en los
+            hábitos alimenticios, uso excesivo de sustancias, postergación.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Técnicas para Afrontar el Estrés</h3>
+        <p>
+          Afortunadamente, hay muchas herramientas que podemos usar para
+          gestionar el estrés y encontrar el equilibrio:
+        </p>
+        <ul>
+          <li>
+            <strong>Técnicas de Respiración:</strong> La respiración profunda y
+            consciente es una de las herramientas más rápidas para calmar el
+            sistema nervioso.
+          </li>
+          <li>
+            <strong>Mindfulness y Meditación:</strong> Practicar la atención
+            plena nos ayuda a vivir el momento presente y a reducir la rumiación
+            de pensamientos negativos.
+          </li>
+          <li>
+            <strong>Ejercicio Físico:</strong> La actividad física libera
+            endorfinas, que son potenciadores naturales del estado de ánimo y
+            reductores del estrés.
+          </li>
+          <li>
+            <strong>Gestión del Tiempo:</strong> Organizar tareas y prioridades
+            puede reducir la sensación de abrumación.
+          </li>
+          <li>
+            <strong>Higiene del Sueño:</strong> Dormir lo suficiente y de
+            calidad es fundamental para la recuperación física y mental.
+          </li>
+          <li>
+            <strong>Conexión Social:</strong> Mantener relaciones saludables y
+            buscar apoyo en amigos y familiares.
+          </li>
+          <li>
+            <strong>Hobbies y Ocio:</strong> Dedicar tiempo a actividades que
+            disfrutes y te relajen.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>El Objetivo de "Calma tu Estrés"</h3>
+        <p>
+          Y aquí es donde entra nuestro juego.
+          <strong>"Calma tu Estrés"</strong> ha sido diseñado como una
+          herramienta interactiva para ayudarte a practicar y reforzar algunas
+          de estas técnicas de afrontamiento del estrés de una manera divertida
+          y accesible. A través de desafíos y actividades lúdicas, podrás
+          experimentar la sensación de gestionar la tensión, encontrar momentos
+          de calma y aprender estrategias para aplicar en tu vida diaria.
+        </p>
+        <p>¡Prepárate para jugar, aprender y encontrar tu propia calma!</p>
+      </section>
+
+      <section>
+        <h3>Una Nota Importante: ¿Por Qué No Hay Botón de Pausa?</h3>
+        <p>
+          Dado que la vida en su libre movimiento no se detiene nunca, siempre
+          está en marcha, nacemos, nos desarrollamos, vivimos como podemos y al
+          final nos llega la parca (la muerte). Todo es un continuo ahora, nada
+          se está quieto, la vida es movimiento continuo, así es todo en la
+          existencia.
+        </p>
+        <p>
+          Por tal motivo pasa con todas las cosas de nuestra existencia. Si
+          usted se detiene a descansar, lo demás sigue caminando, lo que le
+          obligaría posiblemente y con mucho riesgo, a iniciar de nuevo el
+          proceso ya recorrido, al quedarse atrás, sentado, descansando... lo
+          ideal es ir poco a poco, más lento, pero nunca detenerse.
+        </p>
+        <p>
+          Así este juego del estrés, no tiene pausa. Si tiene que salir o parar
+          el juego por algún motivo, deberá iniciar de nuevo el nivel hasta
+          completarlo o ser devorado por la vida.
+        </p>
+      </section>
+
+      <button id="start-game-from-info-button" class="screen-button">
+        ¡Ir al Juego!
+      </button>
+    </div>
+
+    <!-- Nueva Pantalla: Cuestionario Sobre Estrés (Obligatorio antes del Nivel 4) -->
+    <div id="stress-questionnaire-screen" class="hidden">
+      <div class="w-full max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+        <h2 class="text-3xl font-bold text-center text-sky-600 mb-4">
+          Cuestionario de Evaluación del Estrés
+        </h2>
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6">
+          <p class="text-lg font-semibold text-center text-yellow-800">
+            RESPONDA CON SINCERIDAD CADA PREGUNTA
+          </p>
+        </div>
+
+        <form id="questionnaire-form" class="questionnaire-questions-container">
+          <!-- Pregunta 1 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              1. ¿Qué situaciones o eventos están generando mayor tensión en tu
+              vida actualmente?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="3"
+              data-question="1"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 2 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              2. ¿El estrés proviene principalmente del trabajo, estudios,
+              familia, salud o finanzas?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="3"
+              data-question="2"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 3 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              3. ¿Desde cuándo te sientes así?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="3"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 4 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              4. ¿Es un estrés puntual (evento específico) o crónico (prolongado
+              en el tiempo)?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="4"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 5 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              5. ¿Qué pensamientos suelen acompañar esas situaciones?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="3"
+              data-question="5"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 6 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              6. En una escala del 1 al 10, ¿qué nivel de estrés sientes
+              habitualmente?
+            </label>
+            <input
+              type="number"
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+              min="1"
+              max="10"
+              data-question="6"
+              placeholder="Escribe un número del 1 al 10..."
+            />
+          </div>
+
+          <!-- Pregunta 7 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              7. ¿El estrés es constante o aparece en momentos específicos del
+              día?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="7"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 8 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              8. ¿Ha aumentado, disminuido o se mantiene igual en las últimas
+              semanas?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="8"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 9 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              9. ¿Has notado dolores de cabeza, tensión muscular o problemas
+              gastrointestinales?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="9"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 10 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              10. ¿Tienes alteraciones del sueño (insomnio o sueño no
+              reparador)?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="10"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 11 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              11. ¿Cambios en el apetito?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="11"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 12 -->
+          <div class="mb-6 pb-6 border-b border-gray-300">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              12. ¿Fatiga persistente?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="12"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <!-- Pregunta 13 -->
+          <div class="mb-6">
+            <label class="block text-lg font-semibold mb-3 text-slate-700">
+              13. ¿Palpitaciones o sensación de falta de aire?
+            </label>
+            <textarea
+              class="questionnaire-input w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-vertical"
+              rows="2"
+              data-question="13"
+              placeholder="Escribe tu respuesta aquí..."
+            ></textarea>
+          </div>
+
+          <button
+            type="button"
+            id="continue-to-level4-button"
+            class="screen-button bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed w-full"
+            disabled
+          >
+            Continuar al Nivel 4
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Contenedor Principal del Juego (inicialmente oculto) -->
+    <div
+      id="main-game-container"
+      class="w-full max-w-2xl bg-white p-6 rounded-xl shadow-2xl hidden"
+    >
+      <header class="mb-6 text-center">
+        <div class="flex justify-between items-center mb-4">
+          <button
+            id="back-to-info-button"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+          >
+            ← Volver a Información
+          </button>
+          <h1 class="text-4xl font-bold text-sky-600">Calma tu Estrés</h1>
+          <div style="width: 160px"></div>
+        </div>
+        <p class="text-sm text-slate-500">
+          Tu ID de Jugador:
+          <span id="user-id-display" class="font-semibold">Cargando...</span>
+        </p>
+        <div class="flex justify-center gap-6 mt-2">
+          <div class="text-sm text-slate-600">
+            Puntaje Total:
+            <span id="total-score-display" class="font-semibold">0</span>
+          </div>
+          <div class="text-sm text-slate-600">
+            Puntaje Nivel:
+            <span id="level-score-display" class="font-semibold">0</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="mb-4">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-lg font-semibold text-slate-700"
+            >Nivel de Estrés</span
+          >
+          <span id="level-display" class="text-lg font-semibold text-sky-600"
+            >Nivel: 1</span
+          >
+        </div>
+        <div class="stress-bar-container">
+          <div id="stress-bar-fill" class="stress-bar-fill"></div>
+        </div>
+        <p
+          id="stress-value-display"
+          class="text-sm text-right mt-1 text-slate-500"
+        >
+          0%
+        </p>
+      </div>
+
+      <div id="game-area" class="mb-6 border border-slate-300"></div>
+
+      <div class="mb-6">
+        <h2 class="text-xl font-semibold mb-3 text-center text-slate-700">
+          Herramientas de Afrontamiento
+        </h2>
+        <div
+          id="coping-tools-container"
+          class="grid grid-cols-1 sm:grid-cols-2 gap-4"
+        ></div>
+      </div>
+
+      <div
+        id="message-area"
+        class="text-center mb-4 min-h-[24px] text-sky-700 font-semibold"
+      ></div>
+
+      <div class="text-center">
+        <button
+          id="start-button"
+          class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-75"
+        >
+          Comenzar Nivel 1
+        </button>
+        <button
+          id="google-sign-in-button"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 mt-4"
+        >
+          Iniciar Sesión con Google
+        </button>
+        <button
+          id="sign-out-button"
+          class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-75 mt-2 hidden"
+        >
+          Cerrar Sesión
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal de Juego -->
+    <div id="game-modal" class="modal hidden">
+      <div class="modal-content max-w-sm w-full">
+        <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+        <p id="modal-message" class="mb-6"></p>
+        <div class="flex justify-center gap-4">
+          <button
+            id="modal-button"
+            class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg"
+          >
+            OK
+          </button>
+          <button
+            id="modal-button-secondary"
+            class="bg-gray-300 hover:bg-gray-400 text-slate-700 font-bold py-2 px-4 rounded-lg hidden"
+          >
+            Opcional
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import {
+        getAuth,
+        signInAnonymously,
+        signInWithCustomToken,
+        onAuthStateChanged,
+        setPersistence,
+        browserLocalPersistence,
+        GoogleAuthProvider,
+        signInWithPopup,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+        updateDoc,
+        collection,
+        serverTimestamp,
+        setLogLevel,
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+      // Tu configuración de Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyBByZUyXJq7EdTS1lcF9xBYTSJCtn05Bv4",
+        authDomain: "calma-tu-estres.firebaseapp.com",
+        projectId: "calma-tu-estres",
+        storageBucket: "calma-tu-estres.firebasestorage.app",
+        messagingSenderId: "205627972402",
+        appId: "1:205627972402:web:a491fcf12983eb21eb152b",
+      };
+
+      // Inicializa Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      setLogLevel("debug"); // 'debug' para desarrollo, 'silent' para producción
+
+      try {
+        await enableIndexedDbPersistence(db);
+        console.log("Firestore persistence enabled successfully!");
+      } catch (err) {
+        if (err.code == "failed-precondition") {
+          // Multiple tabs open, persistence can only be enabled in one.
+          console.warn(
+            "Firestore persistence failed: Multiple tabs open, persistence can only be enabled in one.",
+          );
+        } else if (err.code == "unimplemented") {
+          // The current browser does not support all of the
+          // features required to enable persistence
+          console.error(
+            "Firestore persistence failed: Browser does not support all features for persistence.",
+            err,
+          );
+        } else {
+          console.error(
+            "Firestore persistence failed for an unknown reason:",
+            err,
+          );
+        }
+      }
+
+      // Variables globales para el juego
+      window.auth = auth;
+      window.db = db;
+      window.signInAnonymously = signInAnonymously;
+      window.onAuthStateChanged = onAuthStateChanged;
+      window.doc = doc;
+      window.setDoc = setDoc;
+      window.getDoc = getDoc;
+
+      // ID de la aplicación para Firestore
+      window.appId = "stress-game-dev";
+
+      let userId = null;
+      let isAuthReady = false;
+
+      // Referencias a elementos DOM
+      const splashScreen = document.getElementById("splash-screen");
+      const startIntroButton = document.getElementById("start-intro-button"); // Nuevo botón en splash screen
+
+      const stressInfoScreen = document.getElementById("stress-info-screen"); // Nueva pantalla de info
+      const startGameFromInfoButton = document.getElementById(
+        "start-game-from-info-button",
+      ); // Botón para ir al juego desde la info
+
+      const mainGameContainer = document.getElementById("main-game-container"); // Contenedor principal del juego
+
+      const stressBarFill = document.getElementById("stress-bar-fill");
+      const stressValueDisplay = document.getElementById(
+        "stress-value-display",
+      );
+      const gameArea = document.getElementById("game-area");
+      const copingToolsContainer = document.getElementById(
+        "coping-tools-container",
+      );
+      const startButton = document.getElementById("start-button");
+      const levelDisplay = document.getElementById("level-display");
+      const messageArea = document.getElementById("message-area");
+      const userIdDisplay = document.getElementById("user-id-display");
+      const googleSignInButton = document.getElementById(
+        "google-sign-in-button",
+      );
+      const signOutButton = document.getElementById("sign-out-button");
+      const backToInfoButton = document.getElementById("back-to-info-button");
+
+      const stressQuestionnaireScreen = document.getElementById(
+        "stress-questionnaire-screen",
+      );
+      const continueToLevel4Button = document.getElementById(
+        "continue-to-level4-button",
+      );
+      const questionnaireForm = document.getElementById("questionnaire-form");
+
+      // Elementos del Modal de Juego
+      const gameModal = document.getElementById("game-modal");
+      const modalTitle = document.getElementById("modal-title");
+      const modalMessage = document.getElementById("modal-message");
+      const modalButton = document.getElementById("modal-button");
+
+      // Estado del Juego
+      let gameState = {
+        currentStress: 0,
+        currentLevel: 1,
+        gameActive: false,
+        stressInterval: null,
+        stressorSpawnInterval: null,
+        levelTimer: null,
+        stressorsOnScreen: [],
+        totalScore: 0,
+        lastLevelScore: 0,
+      };
+
+      // Configuración de Niveles (se mantiene igual)
+      const levelConfig = [
+        {
+          duration: 30000,
+          stressIncreaseRate: 2,
+          stressorSpawnRate: 3000,
+          maxStressors: 3,
+          stressorValue: 10,
+          copingTools: ["respiracion", "pausa"],
+        }, // Nivel 1
+        {
+          duration: 45000,
+          stressIncreaseRate: 3,
+          stressorSpawnRate: 2500,
+          maxStressors: 4,
+          stressorValue: 12,
+          copingTools: ["respiracion", "pausa", "musica"],
+        }, // Nivel 2
+        {
+          duration: 60000,
+          stressIncreaseRate: 4,
+          stressorSpawnRate: 2000,
+          maxStressors: 5,
+          stressorValue: 15,
+          copingTools: ["respiracion", "pausa", "musica", "ejercicio"],
+        }, // Nivel 3
+        {
+          duration: 90000,
+          stressIncreaseRate: 5,
+          stressorSpawnRate: 1500,
+          maxStressors: 6,
+          stressorValue: 20,
+          copingTools: ["respiracion", "pausa", "musica", "ejercicio"],
+        }, // Nivel 4
+        // Agrega más niveles aquí
+      ];
+
+      // Datos de Herramientas de Afrontamiento (se mantiene igual)
+      const copingToolsData = {
+        respiracion: {
+          name: "Respiración Profunda",
+          stressReduction: 15,
+          cooldown: 5000,
+          description: "Reduce 15 de estrés. Cooldown: 5s",
+        },
+        pausa: {
+          name: "Pausa Activa",
+          stressReduction: 10,
+          cooldown: 8000,
+          description: "Reduce 10 de estrés. Cooldown: 8s",
+        },
+        musica: {
+          name: "Escuchar Música",
+          stressReduction: 20,
+          cooldown: 10000,
+          description: "Reduce 20 de estrés. Cooldown: 10s",
+        },
+        ejercicio: {
+          name: "Ejercicio Rápido",
+          stressReduction: 25,
+          cooldown: 12000,
+          description: "Reduce 25 de estrés. Cooldown: 12s",
+        },
+      };
+
+      // --- Funciones de Utilidad y Lógica de Flujo de Pantallas ---
+
+      // Función para mostrar un modal
+      modalButton.addEventListener("click", () => {
+        gameModal.classList.add("hidden");
+      });
+
+      function showModal(title, message, buttonText = "OK") {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modalButton.textContent = buttonText;
+        gameModal.classList.remove("hidden");
+      }
+
+      // Función para manejar la visibilidad de las pantallas
+      function showScreen(screenId) {
+        splashScreen.classList.add("hidden");
+        stressInfoScreen.classList.add("hidden");
+        mainGameContainer.classList.add("hidden");
+        stressQuestionnaireScreen.classList.add("hidden");
+
+        document.getElementById(screenId).classList.remove("hidden");
+        window.scrollTo(0, 0); // Asegura que la pantalla se vea desde arriba
+      }
+
+      // Helpers para puntajes y modal secundario
+      const totalScoreDisplay = document.getElementById("total-score-display");
+      const levelScoreDisplay = document.getElementById("level-score-display");
+      const modalButtonSecondary = document.getElementById(
+        "modal-button-secondary",
+      );
+
+      function updateScoreDisplays() {
+        if (totalScoreDisplay)
+          totalScoreDisplay.textContent = `${gameState.totalScore}`;
+        if (levelScoreDisplay)
+          levelScoreDisplay.textContent = `${gameState.lastLevelScore}`;
+      }
+
+      function showSecondaryModalButton(text, callback) {
+        if (!modalButtonSecondary) return;
+        modalButtonSecondary.textContent = text;
+        modalButtonSecondary.classList.remove("hidden");
+        modalButtonSecondary.onclick = () => {
+          callback();
+          modalButtonSecondary.classList.add("hidden");
+        };
+      }
+
+      function hideSecondaryModalButton() {
+        if (!modalButtonSecondary) return;
+        modalButtonSecondary.classList.add("hidden");
+        modalButtonSecondary.onclick = null;
+      }
+
+      // Event Listeners para la navegación entre pantallas
+      startIntroButton.addEventListener("click", () => {
+        showScreen("stress-info-screen");
+      });
+
+      startGameFromInfoButton.addEventListener("click", () => {
+        showScreen("main-game-container");
+        // Aquí puedes decidir si quieres que el juego empiece automáticamente o espere el botón "Comenzar Nivel"
+        // Si quieres que empiece: startGame();
+      });
+
+      // Event listener para el botón de volver a información
+      backToInfoButton.addEventListener("click", () => {
+        showScreen("stress-info-screen");
+        // Detener el juego si está activo
+        if (gameState.gameActive) {
+          gameState.gameActive = false;
+          stopGameMechanics();
+        }
+        updateUIBeforeGameStart();
+      });
+
+      // Lógica para validación del cuestionario
+      function checkQuestionnaireCompletion() {
+        const inputs = document.querySelectorAll(".questionnaire-input");
+        let allFilled = true;
+
+        inputs.forEach((input) => {
+          const value = input.value.trim();
+          if (value === "") {
+            allFilled = false;
+            input.classList.add("border-red-500");
+            input.classList.remove("border-gray-300");
+          } else {
+            input.classList.remove("border-red-500");
+            input.classList.add("border-gray-300");
+          }
+        });
+
+        continueToLevel4Button.disabled = !allFilled;
+        return allFilled;
+      }
+
+      // Event listeners para los inputs del cuestionario
+      document.querySelectorAll(".questionnaire-input").forEach((input) => {
+        input.addEventListener("input", checkQuestionnaireCompletion);
+        input.addEventListener("change", checkQuestionnaireCompletion);
+      });
+
+      // Event listener para el botón de continuar al nivel 4
+      continueToLevel4Button.addEventListener("click", () => {
+        checkQuestionnaireCompletion();
+        if (continueToLevel4Button.disabled) return;
+
+        // Obtener valor de la pregunta 6
+        const q6Input = document.querySelector('[data-question="6"]');
+        let q6 = null;
+        if (q6Input) q6 = parseInt(q6Input.value, 10);
+        if (Number.isNaN(q6)) q6 = null;
+
+        // Lógica de puntaje del cuestionario
+        let questionnaireScore = 10; // puntaje base
+        if (q6 !== null) {
+          if (q6 < 5) {
+            questionnaireScore += 10; // suma 10 puntos
+          } else if (q6 > 5) {
+            questionnaireScore = 5; // reduce a 5
+          }
+        }
+
+        // Determinar si las respuestas son altamente estresantes (umbral en q6)
+        const highStress = q6 !== null && q6 >= 8;
+
+        // Mensaje y recomendaciones automáticas
+        let rec = "";
+        if (highStress) {
+          rec =
+            "RECOMENDACIÓN IMPORTANTE: Tus respuestas indican un nivel de estrés alto. Busca apoyo profesional si los síntomas persisten, considera técnicas de respiración profunda ahora y contacta a alguien de confianza.\n";
+        }
+
+        const msg = `${rec}Puntaje del cuestionario: ${questionnaireScore}.\n(Nota: base 10; q6<5 suma +10; q6>5 reduce a 5).`;
+
+        // Mostrar la información del cuestionario automáticamente
+        showModal("Resultados del Cuestionario", msg, "Continuar al Nivel 4");
+        hideSecondaryModalButton();
+
+        modalButton.onclick = () => {
+          // Añadir el puntaje del cuestionario al puntaje total del juego
+          gameState.totalScore += questionnaireScore;
+          updateScoreDisplays();
+
+          // Ir al contenedor principal del juego
+          showScreen("main-game-container");
+          updateUIBeforeGameStart();
+          startButton.disabled = false;
+          gameModal.classList.add("hidden");
+        };
+      });
+
+      // --- Lógica de Autenticación y Carga de Datos (la mayoría se mantiene igual) ---
+
+      // --- Lógica de Autenticación y Carga de Datos ---
+      let authInitialized = false; // Bandera para saber si la inicialización de auth ya ocurrió
+      let initialAuthPromise = null; // Para guardar la promesa de inicialización
+
+      // Función que manejará la autenticación inicial, incluyendo anónima
+      async function handleInitialAuth() {
+        if (authInitialized) return; // Ya se ejecutó, no lo hagas de nuevo
+        authInitialized = true;
+
+        console.log(
+          "handleInitialAuth: Executing initial authentication logic.",
+        );
+        // Intentar iniciar sesión anónimamente si no hay usuario existente
+        if (!auth.currentUser) {
+          try {
+            // Aquí usamos signInAnonymously si no hay usuario. onAuthStateChanged se re-disparará.
+            console.log(
+              "handleInitialAuth: No current user, attempting anonymous sign-in.",
+            );
+            await signInAnonymously(auth);
+            console.log(
+              "handleInitialAuth: Anonymous sign-in attempt complete.",
+            );
+          } catch (error) {
+            console.error(
+              "handleInitialAuth: Error during anonymous sign-in:",
+              error,
+            );
+            // Si falla anónima (ej: offline por primera vez sin credenciales), seguir con lo que haya
+          }
+        }
+      }
+
+      // Al inicio, activa el manejo de autenticación si no está en proceso
+      initialAuthPromise = handleInitialAuth(); // Llama la función y guarda la promesa
+
+      // --- FIN DE LA LÓGICA AÑADIDA ---
+
+      onAuthStateChanged(auth, async (user) => {
+        await initialAuthPromise; // Espera a que la autenticación inicial se resuelva
+
+        console.log("onAuthStateChanged triggered. User object:", user);
+        if (user) {
+          userId = user.uid;
+          console.log(
+            "User authenticated via onAuthStateChanged. UID:",
+            userId,
+            "IsAnonymous:",
+            user.isAnonymous,
+          );
+          userIdDisplay.textContent =
+            user.uid + (user.isAnonymous ? " (Anónimo)" : ""); // Muestra si es anónimo
+          isAuthReady = true; // Set auth ready flag
+
+          // Mostrar/Ocultar botones según el estado de autenticación
+          if (user.isAnonymous) {
+            googleSignInButton.classList.remove("hidden");
+            signOutButton.classList.add("hidden");
+          } else {
+            googleSignInButton.classList.add("hidden");
+            signOutButton.classList.remove("hidden");
+          }
+
+          await loadGameProgress(); // Load progress now that user is confirmed
+        } else {
+          userId = null; // Clear userId if no user
+          isAuthReady = false; // Set auth not ready
+          console.log(
+            "User not authenticated in onAuthStateChanged (user is null). Attempting anonymous login.",
+          );
+
+          // Si no hay usuario (o si la sesión anónima falla), mostrar el botón de Google Sign-in
+          googleSignInButton.classList.remove("hidden");
+          signOutButton.classList.add("hidden");
+        }
+      });
+
+      async function initializeAuth() {
+        // --- AÑADE ESTO JUSTO AQUÍ ---
+        await auth.authStateReady(); // Espera a que el estado de auth esté listo y persistido
+        // --- FIN AÑADIDO ---
+        try {
+          console.log("initializeAuth: Attempting setPersistence.");
+          await setPersistence(auth, browserLocalPersistence);
+          console.log("initializeAuth: setPersistence successful.");
+
+          // Check for custom token first
+          if (
+            typeof __initial_auth_token !== "undefined" &&
+            __initial_auth_token &&
+            __initial_auth_token.trim() !== ""
+          ) {
+            console.log(
+              "initializeAuth: __initial_auth_token found. Attempting signInWithCustomToken...",
+            );
+            await signInWithCustomToken(auth, __initial_auth_token);
+            console.log(
+              "initializeAuth: signInWithCustomToken attempt complete. Current user after attempt (may take a moment for onAuthStateChanged to reflect fully):",
+              auth.currentUser,
+            );
+          } else {
+            console.log(
+              "initializeAuth: No __initial_auth_token. Current user (from persistence, if any):",
+              auth.currentUser,
+            );
+          }
+        } catch (error) {
+          console.error(
+            "Error during signInWithCustomToken or setPersistence in initializeAuth:",
+            error,
+          );
+          showModal(
+            "Error Crítico de Autenticación",
+            "Fallo al procesar la autenticación inicial: " +
+              error.message +
+              ". Se intentará login anónimo a través de onAuthStateChanged.",
+          );
+        }
+      }
+
+      initializeAuth(); // Llama a la inicialización
+
+      async function loadGameProgress() {
+        console.log(
+          `loadGameProgress called. Global userId: ${userId}, isAuthReady: ${isAuthReady}`,
+        );
+        if (
+          !isAuthReady ||
+          !userId ||
+          !auth.currentUser ||
+          !auth.currentUser.uid
+        ) {
+          console.warn(
+            "loadGameProgress: Aborting because auth is not fully ready or userId is null.",
+          );
+          // Si auth.currentUser no está listo, significa que Auth no ha persistido offline aún o hay un problema.
+          // Para la persistencia offline, necesitamos que el auth.currentUser esté disponible.
+          if (!navigator.onLine && !auth.currentUser) {
+            // Si estamos offline Y no hay currentUser
+            showModal(
+              "Sin Conexión y Sesión No Persistida",
+              "No hay conexión a internet y tu sesión de usuario no se pudo restaurar offline. Por favor, conéctate para cargar tu progreso.",
+            );
+          } else if (!isAuthReady) {
+            // Si estamos online pero isAuthReady es false
+            showModal(
+              "Error de Sincronización",
+              "Tu sesión no está completamente lista para cargar el progreso. Intenta conectarte o recarga si estás online.",
+            );
+          }
+          gameState.currentLevel = 1; // Fallback
+          updateUIBeforeGameStart();
+          return;
+        }
+
+        const currentUserId = auth.currentUser.uid;
+        console.log(
+          `loadGameProgress: Attempting to load progress for userId: ${currentUserId}, appId: ${window.appId}`,
+        );
+        const docRef = doc(
+          db,
+          `artifacts/${window.appId}/users/${currentUserId}/stressGameData/progress`,
+        );
+        try {
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            gameState.currentLevel = data.currentLevel || 1;
+            console.log("Progress loaded:", data);
+          } else {
+            console.log(
+              "No saved progress found for user " +
+                currentUserId +
+                ", starting at level 1.",
+            );
+            gameState.currentLevel = 1;
+            await saveGameProgress(false); // Guarda el estado inicial si no hay progreso
+          }
+        } catch (error) {
+          console.error(
+            `Error loading progress from Firestore for user ${currentUserId}:`,
+            error,
+          );
+          showModal(
+            "Error de Carga de Progreso",
+            "No se pudo cargar tu progreso: " +
+              error.message +
+              ". Se iniciará en el nivel 1.",
+          );
+          gameState.currentLevel = 1; // Fallback
+        }
+        updateUIBeforeGameStart();
+      }
+
+      async function saveGameProgress(showMessage = true) {
+        console.log(
+          `saveGameProgress called. Global userId: ${userId}, isAuthReady: ${isAuthReady}`,
+        );
+        if (!isAuthReady || !userId) {
+          console.warn(
+            "saveGameProgress: Aborting because isAuthReady is false or userId is null.",
+          );
+          return;
+        }
+
+        if (!auth.currentUser || auth.currentUser.uid !== userId) {
+          console.error(
+            "saveGameProgress: Mismatch or null auth.currentUser before setDoc. Global userId:",
+            userId,
+            "auth.currentUser:",
+            auth.currentUser,
+          );
+          showModal(
+            "Error de Sincronización de Usuario",
+            "No se pudo guardar tu progreso debido a un problema de identidad. Por favor, recarga.",
+          );
+          return;
+        }
+
+        const currentUserId = auth.currentUser.uid;
+        console.log(
+          `saveGameProgress: Attempting to save progress for userId: ${currentUserId}, appId: ${window.appId}`,
+        );
+        const docRef = doc(
+          db,
+          `artifacts/${window.appId}/users/${currentUserId}/stressGameData/progress`,
+        );
+        try {
+          await setDoc(
+            docRef,
+            {
+              currentLevel: gameState.currentLevel,
+              lastPlayed: serverTimestamp(),
+            },
+            { merge: true },
+          );
+          if (showMessage) {
+            console.log(
+              "Progress saved successfully for user " + currentUserId,
+            );
+          }
+        } catch (error) {
+          console.error(
+            `Error saving progress to Firestore for user ${currentUserId}:`,
+            error,
+          );
+          showModal(
+            "Error al Guardar Progreso",
+            "No se pudo guardar tu progreso: " + error.message,
+          );
+        }
+      }
+
+      function updateUIBeforeGameStart() {
+        levelDisplay.textContent = `Nivel: ${gameState.currentLevel}`;
+        startButton.textContent = `Comenzar Nivel ${gameState.currentLevel}`;
+        gameState.currentStress = 0;
+        updateStressBar();
+        setupCopingToolsForLevel(gameState.currentLevel - 1);
+        updateScoreDisplays();
+      }
+
+      function updateStressBar() {
+        const percentage = Math.max(0, Math.min(100, gameState.currentStress));
+        stressBarFill.style.width = `${percentage}%`;
+        stressValueDisplay.textContent = `${Math.round(percentage)}%`;
+        if (percentage > 70) {
+          stressBarFill.style.backgroundColor = "#dc2626"; // red-600
+        } else if (percentage > 40) {
+          stressBarFill.style.backgroundColor = "#f59e0b"; // amber-500
+        } else {
+          stressBarFill.style.backgroundColor = "#22c55e"; // green-500
+        }
+      }
+
+      function increaseStress(amount) {
+        if (!gameState.gameActive) return;
+        gameState.currentStress += amount;
+        if (gameState.currentStress >= 100) {
+          gameState.currentStress = 100;
+          gameOver("¡Estrés al máximo!");
+        }
+        updateStressBar();
+      }
+
+      function decreaseStress(amount) {
+        if (!gameState.gameActive) return;
+        gameState.currentStress -= amount;
+        if (gameState.currentStress < 0) {
+          gameState.currentStress = 0;
+        }
+        updateStressBar();
+      }
+
+      function spawnStressor() {
+        if (
+          !gameState.gameActive ||
+          !levelConfig[gameState.currentLevel - 1] ||
+          gameState.stressorsOnScreen.length >=
+            levelConfig[gameState.currentLevel - 1].maxStressors
+        )
+          return;
+
+        const stressor = document.createElement("div");
+        stressor.classList.add("stressor");
+        stressor.textContent = "Tarea Urgente!";
+
+        const gameAreaRect = gameArea.getBoundingClientRect();
+        const stressorWidth = 80;
+        const stressorHeight = 30;
+
+        stressor.style.left = `${
+          Math.random() * (gameAreaRect.width - stressorWidth)
+        }px`;
+        stressor.style.top = `${
+          Math.random() * (gameAreaRect.height - stressorHeight)
+        }px`;
+
+        stressor.addEventListener("click", () => {
+          if (!gameState.gameActive) return;
+          decreaseStress(
+            levelConfig[gameState.currentLevel - 1].stressorValue / 2,
+          );
+          stressor.remove();
+          gameState.stressorsOnScreen = gameState.stressorsOnScreen.filter(
+            (s) => s !== stressor,
+          );
+          messageArea.textContent = "¡Factor estresante resuelto!";
+          setTimeout(() => (messageArea.textContent = ""), 1500);
+        });
+
+        gameArea.appendChild(stressor);
+        gameState.stressorsOnScreen.push(stressor);
+
+        setTimeout(
+          () => {
+            if (
+              gameState.gameActive &&
+              gameState.stressorsOnScreen.includes(stressor)
+            ) {
+              increaseStress(
+                levelConfig[gameState.currentLevel - 1].stressorValue,
+              );
+              stressor.remove();
+              gameState.stressorsOnScreen = gameState.stressorsOnScreen.filter(
+                (s) => s !== stressor,
+              );
+              messageArea.textContent =
+                "Un factor estresante no se resolvió a tiempo.";
+              setTimeout(() => (messageArea.textContent = ""), 2000);
+            }
+          },
+          5000 + Math.random() * 2000,
+        );
+      }
+
+      function setupCopingToolsForLevel(levelIndex) {
+        copingToolsContainer.innerHTML = "";
+        const currentLevelConfig = levelConfig[levelIndex];
+        if (!currentLevelConfig || !currentLevelConfig.copingTools) {
+          console.error(
+            "Invalid level configuration for tools:",
+            levelIndex,
+            currentLevelConfig,
+          );
+          if (levelIndex >= levelConfig.length) {
+            messageArea.textContent = "¡Has completado todos los niveles!";
+          }
+          return;
+        }
+
+        currentLevelConfig.copingTools.forEach((toolKey) => {
+          const tool = copingToolsData[toolKey];
+          if (!tool) {
+            console.warn(`Tool ${toolKey} not found.`);
+            return;
+          }
+          const button = document.createElement("button");
+          button.classList.add(
+            "coping-tool",
+            "bg-emerald-500",
+            "hover:bg-emerald-600",
+            "text-white",
+            "font-semibold",
+            "py-2",
+            "px-4",
+            "rounded-lg",
+            "w-full",
+            "disabled:opacity-50",
+            "disabled:cursor-not-allowed",
+          );
+          button.textContent = tool.name;
+          button.title = tool.description;
+          button.dataset.toolKey = toolKey;
+
+          button.addEventListener("click", () => {
+            if (!gameState.gameActive || button.disabled) return;
+
+            decreaseStress(tool.stressReduction);
+            messageArea.textContent = `Usaste: ${tool.name}. ¡Estrés reducido!`;
+            setTimeout(() => (messageArea.textContent = ""), 2000);
+
+            button.disabled = true;
+            setTimeout(() => {
+              if (gameState.gameActive) button.disabled = false;
+            }, tool.cooldown);
+          });
+          copingToolsContainer.appendChild(button);
+        });
+      }
+
+      function startGame() {
+        if (!isAuthReady || !auth.currentUser) {
+          showModal(
+            "Espera",
+            "Aún estamos configurando tu sesión o no se pudo autenticar. Intenta en unos segundos o recarga la página.",
+          );
+          console.warn(
+            "startGame aborted: Auth not ready or no current user.",
+            "isAuthReady:",
+            isAuthReady,
+            "auth.currentUser:",
+            auth.currentUser,
+          );
+          return;
+        }
+        if (gameState.currentLevel - 1 >= levelConfig.length) {
+          showModal(
+            "¡Felicidades!",
+            "¡Has completado todos los niveles disponibles! Pronto añadiremos más.",
+            "Reiniciar Juego",
+          );
+          modalButton.onclick = () => {
+            gameState.currentLevel = 1;
+            saveGameProgress();
+            updateUIBeforeGameStart();
+            gameModal.classList.add("hidden");
+          };
+          return;
+        }
+
+        gameState.gameActive = true;
+        gameState.currentStress = 0;
+        gameState.stressorsOnScreen.forEach((s) => s.remove());
+        gameState.stressorsOnScreen = [];
+
+        updateStressBar();
+        messageArea.textContent = `Nivel ${gameState.currentLevel} iniciado. ¡Buena suerte!`;
+        startButton.textContent = `Nivel ${gameState.currentLevel} en Curso...`;
+        startButton.disabled = true;
+
+        mainGameContainer.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        const currentLvlCfg = levelConfig[gameState.currentLevel - 1];
+        if (!currentLvlCfg) {
+          console.error(
+            "Configuración de nivel no encontrada para el nivel:",
+            gameState.currentLevel,
+          );
+          gameOver("Error de configuración del nivel.");
+          return;
+        }
+        setupCopingToolsForLevel(gameState.currentLevel - 1);
+        document
+          .querySelectorAll(".coping-tool")
+          .forEach((btn) => (btn.disabled = false));
+
+        gameState.stressInterval = setInterval(() => {
+          if (gameState.gameActive) {
+            increaseStress(currentLvlCfg.stressIncreaseRate);
+          }
+        }, 1000);
+
+        gameState.stressorSpawnInterval = setInterval(() => {
+          if (gameState.gameActive) {
+            spawnStressor();
+          }
+        }, currentLvlCfg.stressorSpawnRate);
+
+        gameState.levelTimer = setTimeout(() => {
+          if (gameState.gameActive) {
+            levelComplete();
+          }
+        }, currentLvlCfg.duration);
+      }
+
+      function stopGameMechanics() {
+        clearInterval(gameState.stressInterval);
+        clearInterval(gameState.stressorSpawnInterval);
+        clearTimeout(gameState.levelTimer);
+        gameState.stressInterval = null;
+        gameState.stressorSpawnInterval = null;
+        gameState.levelTimer = null;
+        gameState.stressorsOnScreen.forEach((s) => s.remove());
+        gameState.stressorsOnScreen = [];
+        document
+          .querySelectorAll(".coping-tool")
+          .forEach((btn) => (btn.disabled = true));
+      }
+
+      function gameOver(reason) {
+        if (!gameState.gameActive) return;
+        gameState.gameActive = false;
+        stopGameMechanics();
+        // Aplicar penalización al puntaje total: reducir al 20%
+        gameState.totalScore = Math.round(gameState.totalScore * 0.2);
+        updateScoreDisplays();
+
+        showModal(
+          "¡Juego Terminado!",
+          `${reason} Has perdido el nivel ${gameState.currentLevel}. Tu puntaje total se redujo al 20%: ${gameState.totalScore}. ¡Inténtalo de nuevo!`,
+          "Reintentar Nivel",
+        );
+        hideSecondaryModalButton();
+        modalButton.onclick = () => {
+          updateUIBeforeGameStart();
+          startButton.disabled = false;
+          startButton.textContent = `Reintentar Nivel ${gameState.currentLevel}`;
+          gameModal.classList.add("hidden");
+        };
+      }
+
+      function levelComplete() {
+        if (!gameState.gameActive) return;
+        gameState.gameActive = false;
+        stopGameMechanics();
+        const oldLevel = gameState.currentLevel;
+
+        // Calcular puntaje del nivel en base al estrés final (más bajo = mejor puntuación)
+        const levelScore = Math.max(
+          0,
+          Math.round(100 - gameState.currentStress),
+        );
+        gameState.lastLevelScore = levelScore;
+        gameState.totalScore += levelScore;
+        updateScoreDisplays();
+
+        gameState.currentLevel++;
+
+        // Si acaba de completar el nivel 3, mostrar el cuestionario antes del nivel 4
+        if (oldLevel === 3) {
+          saveGameProgress();
+          // Limpiar el cuestionario
+          document.querySelectorAll(".questionnaire-input").forEach((input) => {
+            input.value = "";
+            input.classList.remove("border-red-500");
+            input.classList.add("border-gray-300");
+          });
+          continueToLevel4Button.disabled = true;
+          // Mostrar la pantalla del cuestionario
+          showScreen("stress-questionnaire-screen");
+          // Mostrar felicitación amplia antes del cuestionario
+          showModal(
+            "¡Nivel Superado!",
+            `¡Felicidades! Has superado el Nivel ${oldLevel}. Puntaje nivel: ${levelScore}. Puntaje total: ${gameState.totalScore}. Completa el cuestionario para continuar.`,
+            "Continuar",
+          );
+          modalButton.onclick = () => {
+            gameModal.classList.add("hidden");
+          };
+          return;
+        }
+
+        // Mensaje ampliado de felicitación
+        const message = `¡Felicidades! Has superado el Nivel ${oldLevel}.\nPuntaje obtenido en este nivel: ${levelScore}.\nPuntaje total acumulado: ${gameState.totalScore}.\n¡Sigue así, te esperamos en el próximo nivel!`;
+
+        hideSecondaryModalButton();
+
+        // Si se superaron los niveles 3 o 4, ofrecer opción especial
+        if (oldLevel === 3 || oldLevel === 4) {
+          showModal("¡Nivel Superado!", message, "Volver al Inicio (Nivel 1)");
+          showSecondaryModalButton("Esperar actualización (Nivel 5)", () => {
+            // Si el usuario elige esperar, dejamos el estado como está y mostramos mensaje
+            messageArea.textContent =
+              "Has elegido esperar la próxima actualización. Gracias por jugar.";
+            startButton.disabled = true;
+            gameModal.classList.add("hidden");
+          });
+
+          modalButton.onclick = () => {
+            gameState.currentLevel = 1;
+            saveGameProgress();
+            updateUIBeforeGameStart();
+            startButton.disabled = false;
+            gameModal.classList.add("hidden");
+          };
+        } else {
+          saveGameProgress();
+          showModal(
+            "¡Nivel Superado!",
+            message,
+            `Comenzar Nivel ${gameState.currentLevel}`,
+          );
+          modalButton.onclick = () => {
+            updateUIBeforeGameStart();
+            startButton.disabled = false;
+            gameModal.classList.add("hidden");
+          };
+        }
+      }
+
+      startButton.addEventListener("click", () => {
+        if (!gameState.gameActive) {
+          if (!gameModal.classList.contains("hidden")) {
+            gameModal.classList.add("hidden");
+          }
+          startGame();
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        // Placeholder para ajustes responsivos si es necesario
+      });
+
+      // Configuración de Google Auth Provider
+      const googleProvider = new GoogleAuthProvider();
+      googleProvider.addScope(
+        "https://www.googleapis.com/auth/userinfo.profile",
+      ); // Opcional: Solicitar el perfil del usuario
+
+      // Función para manejar el inicio de sesión con Google
+      googleSignInButton.addEventListener("click", async () => {
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          const user = result.user;
+          console.log(
+            "Inicio de sesión/vinculación con Google exitoso. User UID:",
+            user.uid,
+            "Email:",
+            user.email,
+          );
+          messageArea.textContent = `¡Bienvenido, ${
+            user.displayName || user.email
+          }!`;
+          setTimeout(() => (messageArea.textContent = ""), 3000);
+        } catch (error) {
+          console.error("Error al iniciar sesión con Google:", error);
+          let errorMessage =
+            "Error al iniciar sesión con Google. Intenta de nuevo.";
+          if (error.code === "auth/popup-closed-by-user") {
+            errorMessage = "Se cerró la ventana de inicio de sesión de Google.";
+          } else if (error.code === "auth/cancelled-popup-request") {
+            errorMessage = "Ya hay una ventana de inicio de sesión abierta.";
+          } else if (error.code === "auth/credential-already-in-use") {
+            errorMessage =
+              "Esta cuenta de Google ya está vinculada a otra cuenta. Si crees que es un error, contacta al soporte.";
+          }
+          showModal("Error de Autenticación", errorMessage);
+        }
+      });
+
+      // Función para manejar el cierre de sesión
+      signOutButton.addEventListener("click", async () => {
+        try {
+          await signOut(auth);
+          console.log("Sesión cerrada correctamente.");
+          messageArea.textContent =
+            "¡Sesión cerrada! Puedes jugar como anónimo.";
+          setTimeout(() => (messageArea.textContent = ""), 3000);
+        } catch (error) {
+          console.error("Error al cerrar sesión:", error);
+          showModal(
+            "Error al cerrar sesión",
+            "No se pudo cerrar la sesión: " + error.message,
+          );
+        }
+      });
+
+      // Lógica para la pantalla de bienvenida y carga inicial
+      document.addEventListener("DOMContentLoaded", () => {
+        // Inicia mostrando la splash screen. La lógica de fading la oculta automáticamente.
+        // Los botones de la splash screen y la info screen controlan el flujo.
+        // showScreen('splash-screen'); // Ya es la pantalla inicial por defecto si no tiene 'hidden'
+        // NOTA: El setTimeout original de la splash screen se elimina ya que el flujo es ahora controlado por clics.
+        // La clase `fade-out` se activará al hacer clic en el botón de la splash screen.
+      });
+
+      // --- Registro del Service Worker para la PWA ---
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/service-worker.js")
+            .then((registration) => {
+              console.log(
+                "Service Worker registrado con éxito. Scope:",
+                registration.scope,
+              );
+            })
+            .catch((error) => {
+              console.error("Fallo en el registro del Service Worker:", error);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
