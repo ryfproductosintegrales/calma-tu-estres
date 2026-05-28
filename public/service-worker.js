@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calma-tu-estres-cache-v3'; // Cambia la versión si modificas los assets
+const CACHE_NAME = 'calma-tu-estres-cache-v4'; // Cambia la versión si modificas los assets
 const urlsToCache = [
   '/', // La página principal
   '/index.html', // Asegúrate de que el index.html está en caché
