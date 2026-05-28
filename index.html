@@ -1068,14 +1068,125 @@
         // Determinar si las respuestas son altamente estresantes (umbral en q6)
         const highStress = q6 !== null && q6 >= 8;
 
-        // Mensaje y recomendaciones automáticas
-        let rec = "";
-        if (highStress) {
-          rec =
-            "RECOMENDACIÓN IMPORTANTE: Tus respuestas indican un nivel de estrés alto. Busca apoyo profesional si los síntomas persisten, considera técnicas de respiración profunda ahora y contacta a alguien de confianza.\n";
+        // Sistema emocional inteligente de recomendaciones
+        let emotionalMessage = "";
+        let stressLevel = "";
+
+        // Clasificación emocional
+        if (q6 !== null) {
+          if (q6 <= 3) {
+            stressLevel = "Estrés Bajo";
+
+            emotionalMessage = `
+            🌿 RESULTADO EMOCIONAL: ESTRÉS BAJO
+
+            Tu nivel actual de estrés parece manejable.
+
+            Esto indica que, aunque puedan existir desafíos en tu vida, todavía conservas una capacidad importante para mantener el equilibrio emocional.
+
+            Continúa cuidando tu descanso, tus pensamientos y tus emociones.
+
+            Recuerda:
+            La paz mental no significa ausencia de problemas, sino aprender a enfrentarlos con calma y claridad.
+
+            ✨ Recomendaciones:
+            • Mantén hábitos saludables.
+            • Descansa adecuadamente.
+            • Dedica tiempo a actividades que disfrutes.
+            • Practica respiración profunda ocasionalmente.
+            • Continúa fortaleciendo tu bienestar emocional.
+            `;
+          } else if (q6 <= 6) {
+            stressLevel = "Estrés Moderado";
+
+            emotionalMessage = `
+            🌤 RESULTADO EMOCIONAL: ESTRÉS MODERADO
+
+            Tus respuestas muestran señales de tensión emocional moderada.
+
+            Probablemente estás atravesando situaciones que están demandando mucha energía mental y emocional.
+
+            Es importante que no ignores las señales de cansancio interior.
+
+            Detenerte unos minutos para respirar, reflexionar y reorganizar tu mente puede ayudarte más de lo que imaginas.
+
+            ✨ Recomendaciones:
+            • Organiza tus prioridades.
+            • Evita sobrecargarte.
+            • Toma pausas conscientes.
+            • Escucha música relajante.
+            • Habla con personas de confianza.
+            • Practica técnicas de respiración.
+            `;
+          } else if (q6 <= 8) {
+            stressLevel = "Estrés Alto";
+
+            emotionalMessage = `
+            ⚠️ RESULTADO EMOCIONAL: ESTRÉS ALTO
+
+            Tus respuestas reflejan un nivel importante de tensión emocional.
+
+            Es posible que hayas estado cargando demasiadas preocupaciones, responsabilidades o pensamientos difíciles durante mucho tiempo.
+
+            No tienes que resolver toda tu vida en un solo día.
+
+            Respirar también es avanzar.
+
+            Tu bienestar emocional merece atención, comprensión y descanso.
+
+            ✨ Recomendaciones importantes:
+            • Reduce la sobreexigencia.
+            • Descansa mentalmente.
+            • Busca espacios de tranquilidad.
+            • Practica meditación breve.
+            • Evita aislarte emocionalmente.
+            • Expresa lo que sientes.
+            • Considera apoyo profesional si el estrés persiste.
+            `;
+          } else {
+            stressLevel = "Estrés Severo";
+
+            emotionalMessage = `
+            🛑 RESULTADO EMOCIONAL: ESTRÉS SEVERO
+
+            Tus respuestas indican un nivel muy elevado de estrés emocional.
+
+            Tal vez llevas demasiado tiempo intentando sostener situaciones difíciles sin darte el descanso emocional que necesitas.
+
+            Es importante comprender que pedir ayuda no es debilidad.
+
+            Tu mente y tu cuerpo también necesitan cuidado.
+
+            No ignores las señales emocionales que estás experimentando.
+
+            ✨ Recomendaciones urgentes:
+            • Busca apoyo emocional.
+            • Habla con alguien de confianza.
+            • Descansa profundamente.
+            • Reduce tensiones innecesarias.
+            • Practica respiración consciente.
+            • Realiza actividades relajantes.
+            • Considera orientación profesional.
+            • Recuerda que todo proceso difícil puede mejorar con apoyo y tiempo.
+
+            🌱 Nunca olvides:
+            Incluso en los momentos más difíciles, siempre existe la posibilidad de recuperar la calma interior.
+            `;
+          }
         }
 
-        const msg = `${rec}Puntaje del cuestionario: ${questionnaireScore}.\n(Nota: base 10; q6<5 suma +10; q6>5 reduce a 5).`;
+        // Mensaje final completo
+        const msg = `
+            ${emotionalMessage}
+
+            📊 Puntaje del cuestionario: ${questionnaireScore}
+
+            📌 Clasificación emocional:
+            ${stressLevel}
+
+            💚 Gracias por completar esta evaluación emocional.
+            Continúa avanzando poco a poco hacia una vida con mayor calma y equilibrio.
+            `;
 
         // Mostrar la información del cuestionario automáticamente
         showModal("Resultados del Cuestionario", msg, "Continuar al Nivel 4");
@@ -1585,6 +1696,207 @@
         }, currentLvlCfg.duration);
       }
 
+      function showRelaxationZone() {
+        const breathingSteps = [
+          "🌿 Inhala contando... (1-2-3-4)",
+
+          "🧘 Retén el aire, Enfócate y relájate... (1-2-3-4)",
+
+          "🌊 Exhala y libérate contando... (1-2-3-4)",
+          "🕊️ Libera toda tensión",
+          "💚 Respira con calma",
+          "🌱 Tu mente merece descansar",
+        ];
+
+        let currentStep = 0;
+        let countdown = 60;
+
+        modalTitle.textContent = "Zona de Relajación";
+
+        modalMessage.innerHTML = `
+                <div style="text-align:center;">
+                  <h2 style="font-size:28px; margin-bottom:15px;">
+                    🧘 Meditación Guiada
+                  </h2>
+
+                  <p style="
+                    margin-bottom:20px;
+                    line-height:1.8;
+                    font-size:18px;
+                  ">
+                    Has completado una etapa importante.
+                    Ahora dedica este momento únicamente para ti.
+                  </p>
+
+                  <div id="breathing-guide" style="
+                    background:#ecfeff;
+                    padding:20px;
+                    border-radius:16px;
+                    margin-bottom:20px;
+                    font-size:22px;
+                    color:#0f766e;
+                    font-weight:bold;
+                    min-height:90px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                  ">
+                    🌿 Preparando ejercicio...
+                  </div>
+
+                  <div style="
+                    font-size:38px;
+                    font-weight:bold;
+                    color:#0284c7;
+                    margin-bottom:15px;
+                  " id="relax-timer">
+                    01:00
+                  </div>
+
+                  <p style="
+                    color:#64748b;
+                    margin-bottom:20px;
+                    font-size:16px;
+                  ">
+                    Sigue lentamente las instrucciones de respiración.
+                  </p>
+
+                  <div style="
+                    display:flex;
+                    gap:10px;
+                    justify-content:center;
+                    flex-wrap:wrap;
+                  ">
+                    <button id="repeatRelaxBtn" style="
+                      background:#0ea5e9;
+                      color:white;
+                      border:none;
+                      padding:12px 20px;
+                      border-radius:10px;
+                      cursor:pointer;
+                      font-size:16px;
+                    ">
+                      🔄 Repetir ejercicio
+                    </button>
+
+                    <button id="waitUpdateBtn" style="
+                      background:#10b981;
+                      color:white;
+                      border:none;
+                      padding:12px 20px;
+                      border-radius:10px;
+                      cursor:pointer;
+                      font-size:16px;
+                    ">
+                      ⏳ Esperar actualización
+                    </button>
+                  </div>
+                </div>
+              `;
+
+        gameModal.classList.remove("hidden");
+
+        const breathingGuide = document.getElementById("breathing-guide");
+
+        const timerElement = document.getElementById("relax-timer");
+
+        const breathingInterval = setInterval(() => {
+          breathingGuide.textContent = breathingSteps[currentStep];
+
+          currentStep++;
+
+          if (currentStep >= breathingSteps.length) {
+            currentStep = 0;
+          }
+        }, 4000);
+
+        const timerInterval = setInterval(() => {
+          countdown--;
+
+          const minutes = String(Math.floor(countdown / 60)).padStart(2, "0");
+
+          const seconds = String(countdown % 60).padStart(2, "0");
+
+          timerElement.textContent = `${minutes}:${seconds}`;
+
+          if (countdown <= 0) {
+            clearInterval(timerInterval);
+
+            breathingGuide.innerHTML = `
+                    🌟 Excelente trabajo.<br>
+                    Has completado esta sesión de relajación.
+                  `;
+          }
+        }, 1000);
+
+        document
+          .getElementById("repeatRelaxBtn")
+          .addEventListener("click", () => {
+            clearInterval(timerInterval);
+            clearInterval(breathingInterval);
+
+            showRelaxationZone();
+          });
+
+        document
+          .getElementById("waitUpdateBtn")
+          .addEventListener("click", () => {
+            clearInterval(timerInterval);
+            clearInterval(breathingInterval);
+
+            messageArea.innerHTML = `
+              <div style="text-align:center;">
+
+                <h2 style="
+                  color:#0f766e;
+                  margin-bottom:15px;
+                ">
+                  🌿 Has completado todos los niveles actuales
+                </h2>
+
+                <p style="
+                  margin-bottom:20px;
+                  line-height:1.7;
+                  color:#334155;
+                ">
+                  Gracias por cuidar tu bienestar emocional.
+                  Mientras llega la próxima actualización,
+                  puedes continuar utilizando el ejercicio
+                  de respiración y relajación cuando lo necesites.
+                </p>
+
+                <button id="permanentRelaxBtn" style="
+                  background:#0ea5e9;
+                  color:white;
+                  border:none;
+                  padding:14px 22px;
+                  border-radius:12px;
+                  cursor:pointer;
+                  font-size:17px;
+                  font-weight:bold;
+                ">
+                  🧘 Repetir ejercicio de respiración
+                </button>
+
+              </div>
+            `;
+
+            startButton.disabled = true;
+
+            gameModal.classList.add("hidden");
+
+            setTimeout(() => {
+              const permanentBtn = document.getElementById("permanentRelaxBtn");
+
+              if (permanentBtn && typeof showRelaxationZone === "function") {
+                permanentBtn.onclick = () => {
+                  showRelaxationZone();
+                };
+              }
+            }, 300);
+          });
+      }
+
       function stopGameMechanics() {
         clearInterval(gameState.stressInterval);
         clearInterval(gameState.stressorSpawnInterval);
@@ -1670,12 +1982,15 @@
         // Si se superaron los niveles 3 o 4, ofrecer opción especial
         if (oldLevel === 3 || oldLevel === 4) {
           showModal("¡Nivel Superado!", message, "Volver al Inicio (Nivel 1)");
-          showSecondaryModalButton("Esperar actualización (Nivel 5)", () => {
-            // Si el usuario elige esperar, dejamos el estado como está y mostramos mensaje
-            messageArea.textContent =
-              "Has elegido esperar la próxima actualización. Gracias por jugar.";
-            startButton.disabled = true;
+          showSecondaryModalButton("Zona de Relajación", () => {
             gameModal.classList.add("hidden");
+
+            showRelaxationZone();
+
+            messageArea.textContent =
+              "Has completado todos los niveles actuales. Gracias por cuidar tu bienestar emocional.";
+
+            // startButton.disabled = true;
           });
 
           modalButton.onclick = () => {
