@@ -211,6 +211,20 @@
       .questionnaire-input:focus {
         border-color: #0ea5e9 !important;
       }
+
+      #game-area {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 300px;
+      }
+
+      .game-background {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        transition: background-image 0.5s ease-in-out;
+      }
     </style>
   </head>
   <body
@@ -647,23 +661,27 @@
           Tu ID de Jugador:
           <span id="user-id-display" class="font-semibold">Cargando...</span>
         </p>
-        <div class="flex justify-center gap-6 mt-2">
+        <div class="flex justify-center gap-6 mt-2 flex-wrap">
           <div class="text-sm text-slate-600">
-            Puntaje Total:
-            <span id="total-score-display" class="font-semibold">0</span>
+            Meta nivel:
+            <span id="level-goal-display" class="font-semibold">100</span>
           </div>
+
           <div class="text-sm text-slate-600">
-            Puntaje Nivel:
+            Obtenido nivel:
             <span id="level-score-display" class="font-semibold">0</span>
+          </div>
+
+          <div class="text-sm text-slate-600">
+            Total del juego:
+            <span id="total-score-display" class="font-semibold">0</span>
           </div>
         </div>
       </header>
 
       <div class="mb-4">
         <div class="flex justify-between items-center mb-1">
-          <span class="text-lg font-semibold text-slate-700"
-            >Nivel de Estrés</span
-          >
+          <span class="text-lg font-semibold text-slate-700">Supiste!!!</span>
           <span id="level-display" class="text-lg font-semibold text-sky-600"
             >Nivel: 1</span
           >
@@ -679,7 +697,10 @@
         </p>
       </div>
 
-      <div id="game-area" class="mb-6 border border-slate-300"></div>
+      <div
+        id="game-area"
+        class="mb-6 border border-slate-300 game-background"
+      ></div>
 
       <div class="mb-6">
         <h2 class="text-xl font-semibold mb-3 text-center text-slate-700">
@@ -873,12 +894,13 @@
         stressorsOnScreen: [],
         totalScore: 0,
         lastLevelScore: 0,
+        levelScores: {},
       };
 
       // Configuración de Niveles (se mantiene igual)
       const levelConfig = [
         {
-          duration: 30000,
+          duration: 2,
           stressIncreaseRate: 2,
           stressorSpawnRate: 3000,
           maxStressors: 3,
@@ -886,7 +908,7 @@
           copingTools: ["respiracion", "pausa"],
         }, // Nivel 1
         {
-          duration: 45000,
+          duration: 2,
           stressIncreaseRate: 3,
           stressorSpawnRate: 2500,
           maxStressors: 4,
@@ -894,7 +916,7 @@
           copingTools: ["respiracion", "pausa", "musica"],
         }, // Nivel 2
         {
-          duration: 60000,
+          duration: 2,
           stressIncreaseRate: 4,
           stressorSpawnRate: 2000,
           maxStressors: 5,
@@ -902,7 +924,7 @@
           copingTools: ["respiracion", "pausa", "musica", "ejercicio"],
         }, // Nivel 3
         {
-          duration: 90000,
+          duration: 2,
           stressIncreaseRate: 5,
           stressorSpawnRate: 1500,
           maxStressors: 6,
@@ -1017,6 +1039,19 @@
         updateUIBeforeGameStart();
       });
 
+      function updateLevelBackground() {
+        const gameArea = document.getElementById("game-area");
+
+        const backgrounds = {
+          1: "assets/backgrounds/nivel1.png",
+          2: "assets/backgrounds/nivel2.png",
+          3: "assets/backgrounds/nivel3.png",
+          4: "assets/backgrounds/nivel4.png",
+        };
+
+        gameArea.style.backgroundImage = `url('${backgrounds[gameState.currentLevel] || backgrounds[1]}')`;
+      }
+
       // Lógica para validación del cuestionario
       function checkQuestionnaireCompletion() {
         const inputs = document.querySelectorAll(".questionnaire-input");
@@ -1056,7 +1091,7 @@
         if (Number.isNaN(q6)) q6 = null;
 
         // Lógica de puntaje del cuestionario
-        let questionnaireScore = 10; // puntaje base
+        let questionnaireScore = 25; // puntaje base
         if (q6 !== null) {
           if (q6 < 5) {
             questionnaireScore += 10; // suma 10 puntos
@@ -1068,14 +1103,125 @@
         // Determinar si las respuestas son altamente estresantes (umbral en q6)
         const highStress = q6 !== null && q6 >= 8;
 
-        // Mensaje y recomendaciones automáticas
-        let rec = "";
-        if (highStress) {
-          rec =
-            "RECOMENDACIÓN IMPORTANTE: Tus respuestas indican un nivel de estrés alto. Busca apoyo profesional si los síntomas persisten, considera técnicas de respiración profunda ahora y contacta a alguien de confianza.\n";
+        // Sistema emocional inteligente de recomendaciones
+        let emotionalMessage = "";
+        let stressLevel = "";
+
+        // Clasificación emocional
+        if (q6 !== null) {
+          if (q6 <= 3) {
+            stressLevel = "Estrés Bajo";
+
+            emotionalMessage = `
+            🌿 RESULTADO EMOCIONAL: ESTRÉS BAJO
+
+            Tu nivel actual de estrés parece manejable.
+
+            Esto indica que, aunque puedan existir desafíos en tu vida, todavía conservas una capacidad importante para mantener el equilibrio emocional.
+
+            Continúa cuidando tu descanso, tus pensamientos y tus emociones.
+
+            Recuerda:
+            La paz mental no significa ausencia de problemas, sino aprender a enfrentarlos con calma y claridad.
+
+            ✨ Recomendaciones:
+            • Mantén hábitos saludables.
+            • Descansa adecuadamente.
+            • Dedica tiempo a actividades que disfrutes.
+            • Practica respiración profunda ocasionalmente.
+            • Continúa fortaleciendo tu bienestar emocional.
+            `;
+          } else if (q6 <= 6) {
+            stressLevel = "Estrés Moderado";
+
+            emotionalMessage = `
+            🌤 RESULTADO EMOCIONAL: ESTRÉS MODERADO
+
+            Tus respuestas muestran señales de tensión emocional moderada.
+
+            Probablemente estás atravesando situaciones que están demandando mucha energía mental y emocional.
+
+            Es importante que no ignores las señales de cansancio interior.
+
+            Detenerte unos minutos para respirar, reflexionar y reorganizar tu mente puede ayudarte más de lo que imaginas.
+
+            ✨ Recomendaciones:
+            • Organiza tus prioridades.
+            • Evita sobrecargarte.
+            • Toma pausas conscientes.
+            • Escucha música relajante.
+            • Habla con personas de confianza.
+            • Practica técnicas de respiración.
+            `;
+          } else if (q6 <= 8) {
+            stressLevel = "Estrés Alto";
+
+            emotionalMessage = `
+            ⚠️ RESULTADO EMOCIONAL: ESTRÉS ALTO
+
+            Tus respuestas reflejan un nivel importante de tensión emocional.
+
+            Es posible que hayas estado cargando demasiadas preocupaciones, responsabilidades o pensamientos difíciles durante mucho tiempo.
+
+            No tienes que resolver toda tu vida en un solo día.
+
+            Respirar también es avanzar.
+
+            Tu bienestar emocional merece atención, comprensión y descanso.
+
+            ✨ Recomendaciones importantes:
+            • Reduce la sobreexigencia.
+            • Descansa mentalmente.
+            • Busca espacios de tranquilidad.
+            • Practica meditación breve.
+            • Evita aislarte emocionalmente.
+            • Expresa lo que sientes.
+            • Considera apoyo profesional si el estrés persiste.
+            `;
+          } else {
+            stressLevel = "Estrés Severo";
+
+            emotionalMessage = `
+            🛑 RESULTADO EMOCIONAL: ESTRÉS SEVERO
+
+            Tus respuestas indican un nivel muy elevado de estrés emocional.
+
+            Tal vez llevas demasiado tiempo intentando sostener situaciones difíciles sin darte el descanso emocional que necesitas.
+
+            Es importante comprender que pedir ayuda no es debilidad.
+
+            Tu mente y tu cuerpo también necesitan cuidado.
+
+            No ignores las señales emocionales que estás experimentando.
+
+            ✨ Recomendaciones urgentes:
+            • Busca apoyo emocional.
+            • Habla con alguien de confianza.
+            • Descansa profundamente.
+            • Reduce tensiones innecesarias.
+            • Practica respiración consciente.
+            • Realiza actividades relajantes.
+            • Considera orientación profesional.
+            • Recuerda que todo proceso difícil puede mejorar con apoyo y tiempo.
+
+            🌱 Nunca olvides:
+            Incluso en los momentos más difíciles, siempre existe la posibilidad de recuperar la calma interior.
+            `;
+          }
         }
 
-        const msg = `${rec}Puntaje del cuestionario: ${questionnaireScore}.\n(Nota: base 10; q6<5 suma +10; q6>5 reduce a 5).`;
+        // Mensaje final completo
+        const msg = `
+            ${emotionalMessage}
+
+            📊 Puntaje del cuestionario: ${questionnaireScore}
+
+            📌 Clasificación emocional:
+            ${stressLevel}
+
+            💚 Gracias por completar esta evaluación emocional.
+            Continúa avanzando poco a poco hacia una vida con mayor calma y equilibrio.
+            `;
 
         // Mostrar la información del cuestionario automáticamente
         showModal("Resultados del Cuestionario", msg, "Continuar al Nivel 4");
@@ -1085,6 +1231,7 @@
           // Añadir el puntaje del cuestionario al puntaje total del juego
           gameState.totalScore += questionnaireScore;
           updateScoreDisplays();
+          saveGameProgress(false);
 
           // Ir al contenedor principal del juego
           showScreen("main-game-container");
@@ -1264,6 +1411,8 @@
           if (docSnap.exists()) {
             const data = docSnap.data();
             gameState.currentLevel = data.currentLevel || 1;
+            gameState.levelScores = data.levelScores || {};
+            gameState.totalScore = data.totalScore || 0;
             console.log("Progress loaded:", data);
           } else {
             console.log(
@@ -1324,10 +1473,18 @@
           `artifacts/${window.appId}/users/${currentUserId}/stressGameData/progress`,
         );
         try {
+          console.log("GUARDANDO:", {
+            currentLevel: gameState.currentLevel,
+            totalScore: gameState.totalScore,
+            levelScores: gameState.levelScores,
+          });
+
           await setDoc(
             docRef,
             {
               currentLevel: gameState.currentLevel,
+              totalScore: gameState.totalScore,
+              levelScores: gameState.levelScores,
               lastPlayed: serverTimestamp(),
             },
             { merge: true },
@@ -1356,6 +1513,7 @@
         updateStressBar();
         setupCopingToolsForLevel(gameState.currentLevel - 1);
         updateScoreDisplays();
+        updateLevelBackground();
       }
 
       function updateStressBar() {
@@ -1585,6 +1743,212 @@
         }, currentLvlCfg.duration);
       }
 
+      function showRelaxationZone() {
+        const breathingSteps = [
+          "🌿 Inhala contando... (1-2-3-4)",
+          "🧘 Retén el aire, Enfócate y relájate... (1-2-3-4)",
+          "🌊 Exhala y libérate contando... (1-2-3-4)",
+
+          "Repite el ejercicio inhalando, reteniendo y exhalando",
+
+          "🌿 Inhala contando... (1-2-3-4)",
+          "🧘 Retén el aire, Enfócate y relájate... (1-2-3-4)",
+          "🌊 Exhala y libérate contando... (1-2-3-4)",
+
+          "🕊️ Libera toda la tensión",
+          "💚 Respira con calma",
+          "🌱 Tu mente merece descansar",
+        ];
+
+        let currentStep = 0;
+        let countdown = 180;
+
+        modalTitle.textContent = "Zona de Relajación";
+
+        modalMessage.innerHTML = `
+                <div style="text-align:center;">
+                  <h2 style="font-size:28px; margin-bottom:15px;">
+                    🧘 Meditación Guiada
+                  </h2>
+
+                  <p style="
+                    margin-bottom:20px;
+                    line-height:1.8;
+                    font-size:18px;
+                  ">
+                    Has completado una etapa importante.
+                    Ahora dedica este momento únicamente para ti.
+                  </p>
+
+                  <div id="breathing-guide" style="
+                    background:#ecfeff;
+                    padding:20px;
+                    border-radius:16px;
+                    margin-bottom:20px;
+                    font-size:22px;
+                    color:#0f766e;
+                    font-weight:bold;
+                    min-height:90px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                  ">
+                    🌿 Preparando ejercicio...
+                  </div>
+
+                  <div style="
+                    font-size:38px;
+                    font-weight:bold;
+                    color:#0284c7;
+                    margin-bottom:15px;
+                  " id="relax-timer">
+                    01:00
+                  </div>
+
+                  <p style="
+                    color:#64748b;
+                    margin-bottom:20px;
+                    font-size:16px;
+                  ">
+                    Sigue lentamente las instrucciones de respiración.
+                  </p>
+
+                  <div style="
+                    display:flex;
+                    gap:10px;
+                    justify-content:center;
+                    flex-wrap:wrap;
+                  ">
+                    <button id="repeatRelaxBtn" style="
+                      background:#0ea5e9;
+                      color:white;
+                      border:none;
+                      padding:12px 20px;
+                      border-radius:10px;
+                      cursor:pointer;
+                      font-size:16px;
+                    ">
+                      🔄 Repetir ejercicio
+                    </button>
+
+                    <button id="waitUpdateBtn" style="
+                      background:#10b981;
+                      color:white;
+                      border:none;
+                      padding:12px 20px;
+                      border-radius:10px;
+                      cursor:pointer;
+                      font-size:16px;
+                    ">
+                      ⏳ Esperar actualización
+                    </button>
+                  </div>
+                </div>
+              `;
+
+        gameModal.classList.remove("hidden");
+
+        const breathingGuide = document.getElementById("breathing-guide");
+
+        const timerElement = document.getElementById("relax-timer");
+
+        const breathingInterval = setInterval(() => {
+          breathingGuide.textContent = breathingSteps[currentStep];
+
+          currentStep++;
+
+          if (currentStep >= breathingSteps.length) {
+            currentStep = 0;
+          }
+        }, 4000);
+
+        const timerInterval = setInterval(() => {
+          countdown--;
+
+          const minutes = String(Math.floor(countdown / 60)).padStart(2, "0");
+
+          const seconds = String(countdown % 60).padStart(2, "0");
+
+          timerElement.textContent = `${minutes}:${seconds}`;
+
+          if (countdown <= 0) {
+            clearInterval(timerInterval);
+
+            breathingGuide.innerHTML = `
+                    🌟 Excelente trabajo.<br>
+                    Has completado esta sesión de relajación.
+                  `;
+          }
+        }, 1000);
+
+        document
+          .getElementById("repeatRelaxBtn")
+          .addEventListener("click", () => {
+            clearInterval(timerInterval);
+            clearInterval(breathingInterval);
+
+            showRelaxationZone();
+          });
+
+        document
+          .getElementById("waitUpdateBtn")
+          .addEventListener("click", () => {
+            clearInterval(timerInterval);
+            clearInterval(breathingInterval);
+
+            messageArea.innerHTML = `
+              <div style="text-align:center;">
+
+                <h2 style="
+                  color:#0f766e;
+                  margin-bottom:15px;
+                ">
+                  🌿 Has completado todos los niveles actuales
+                </h2>
+
+                <p style="
+                  margin-bottom:20px;
+                  line-height:1.7;
+                  color:#334155;
+                ">
+                  Gracias por cuidar tu bienestar emocional.
+                  Mientras llega la próxima actualización,
+                  puedes continuar utilizando el ejercicio
+                  de respiración y relajación cuando lo necesites.
+                </p>
+
+                <button id="permanentRelaxBtn" style="
+                  background:#0ea5e9;
+                  color:white;
+                  border:none;
+                  padding:14px 22px;
+                  border-radius:12px;
+                  cursor:pointer;
+                  font-size:17px;
+                  font-weight:bold;
+                ">
+                  🧘 Repetir ejercicio de respiración
+                </button>
+
+              </div>
+            `;
+
+            startButton.disabled = true;
+
+            gameModal.classList.add("hidden");
+
+            setTimeout(() => {
+              const permanentBtn = document.getElementById("permanentRelaxBtn");
+
+              if (permanentBtn && typeof showRelaxationZone === "function") {
+                permanentBtn.onclick = () => {
+                  showRelaxationZone();
+                };
+              }
+            }, 300);
+          });
+      }
+
       function stopGameMechanics() {
         clearInterval(gameState.stressInterval);
         clearInterval(gameState.stressorSpawnInterval);
@@ -1633,6 +1997,8 @@
           Math.round(100 - gameState.currentStress),
         );
         gameState.lastLevelScore = levelScore;
+        gameState.levelScores[oldLevel] = levelScore;
+        console.log("Puntajes por nivel:", gameState.levelScores);
         gameState.totalScore += levelScore;
         updateScoreDisplays();
 
@@ -1670,17 +2036,25 @@
         // Si se superaron los niveles 3 o 4, ofrecer opción especial
         if (oldLevel === 3 || oldLevel === 4) {
           showModal("¡Nivel Superado!", message, "Volver al Inicio (Nivel 1)");
-          showSecondaryModalButton("Esperar actualización (Nivel 5)", () => {
-            // Si el usuario elige esperar, dejamos el estado como está y mostramos mensaje
-            messageArea.textContent =
-              "Has elegido esperar la próxima actualización. Gracias por jugar.";
-            startButton.disabled = true;
+          showSecondaryModalButton("Zona de Relajación", () => {
             gameModal.classList.add("hidden");
+
+            showRelaxationZone();
+
+            messageArea.textContent =
+              "Has completado todos los niveles actuales. Gracias por cuidar tu bienestar emocional.";
+
+            // startButton.disabled = true;
           });
 
           modalButton.onclick = () => {
             gameState.currentLevel = 1;
+
+            gameState.totalScore = 0;
+            gameState.lastLevelScore = 0;
+
             saveGameProgress();
+
             updateUIBeforeGameStart();
             startButton.disabled = false;
             gameModal.classList.add("hidden");
